@@ -1526,6 +1526,51 @@ body.dark-mode .status-offline { background-color: #374151; color: #9ca3af; }
     z-index: 10;
 }
 
+/* Gamification Specific Styles */
+#leaderboard-modal .modal-content {
+  text-align: center;
+  max-width: 500px;
+}
+.data-table th, .data-table td {
+  padding: 10px;
+  text-align: left;
+  border-bottom: 1px solid #ddd;
+}
+.spinner {
+  border: 4px solid #f3f3f3;
+  border-top: 4px solid #3498db;
+  border-radius: 50%;
+  width: 30px;
+  height: 30px;
+  animation: spin 1s linear infinite;
+  margin: 20px auto;
+}
+@keyframes spin { 0% { transform: rotate(0deg); } 100% { transform: rotate(360deg); } }
+
+/* Gamification Rank Badge Styles */
+.rank-badge {
+  display: inline-block;
+  padding: 4px 12px;
+  border-radius: 12px;
+  font-size: 0.85rem;
+  font-weight: 700;
+  text-transform: uppercase;
+  letter-spacing: 0.5px;
+  margin-top: 4px;
+  background-color: #f3f4f6; /* Default Gray */
+  color: #6b7280;
+  border: 1px solid transparent;
+  box-shadow: 0 1px 2px rgba(0,0,0,0.05);
+}
+
+/* Rank Specific Colors */
+.rank-legend { background: linear-gradient(135deg, #ef4444, #b91c1c); color: white; border-color: #b91c1c; box-shadow: 0 2px 5px rgba(220, 38, 38, 0.4); }
+.rank-master { background: linear-gradient(135deg, #0ea5e9, #2563eb); color: white; border-color: #2563eb; box-shadow: 0 2px 5px rgba(37, 99, 235, 0.4); }
+.rank-elite { background: linear-gradient(135deg, #fbbf24, #d97706); color: white; border-color: #d97706; text-shadow: 0 1px 1px rgba(0,0,0,0.2); }
+.rank-pro { background: linear-gradient(135deg, #e5e7eb, #9ca3af); color: #374151; border-color: #9ca3af; }
+.rank-apprentice { background: #ffedd5; color: #9a3412; border-color: #fed7aa; }
+.rank-novice { background: #f3f4f6; color: #6b7280; border-color: #e5e7eb; }
+
 
 
     </style>
@@ -1598,6 +1643,7 @@ body.dark-mode .status-offline { background-color: #374151; color: #9ca3af; }
         
         <div class="nav-group">
           <div class="nav-group-title" title="Agent Tools"><span>Agent Tools</span></div>
+          
           <button id="profile-tab-button" class="tab-button" onclick="showTab('profile')">
             <svg class="nav-icon" xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="none" stroke="currentColor"><path d="M20 21v-2a4 4 0 0 0-4-4H8a4 4 0 0 0-4 4v2"></path><circle cx="12" cy="7" r="4"></circle></svg>
             <span class="nav-button-text">My Profile</span>
@@ -1710,6 +1756,9 @@ body.dark-mode .status-offline { background-color: #374151; color: #9ca3af; }
       <!-- Main Content Area -->
       <!-- All tab panels are moved inside here -->
       <main id="app-content">
+
+        <!--                           Rewards                                  -->
+
         
         <!-- ================================== -->
         <!--      TAB 1: PUNCH PANEL            -->
@@ -1748,7 +1797,7 @@ body.dark-mode .status-offline { background-color: #374151; color: #9ca3af; }
       </div>
     </div>
 
-    <div style="background: var(--card-bg); padding: 15px; border-radius: 8px; border: 1px solid var(--border-color); box-shadow: var(--shadow-sm); display: flex; align-items: center; gap: 12px;">
+  <div style="background: var(--card-bg); padding: 15px; border-radius: 8px; border: 1px solid var(--border-color); box-shadow: var(--shadow-sm); display: flex; align-items: center; gap: 12px;">
       <div id="status-icon-bg" style="background: #10b981; color: white; width: 40px; height: 40px; border-radius: 50%; display: flex; align-items: center; justify-content: center; font-size: 1.2rem;">⚡</div>
       <div>
         <div id="status-timer-label" style="font-size: 0.75rem; color: var(--text-color-secondary); text-transform: uppercase; font-weight: 600;">Current Activity</div>
@@ -1757,9 +1806,38 @@ body.dark-mode .status-offline { background-color: #374151; color: #9ca3af; }
       </div>
     </div>
 
+  </div><div class="info-card" id="gamification-card" style="margin-bottom: 20px; text-align: left; background: var(--card-bg);">
+  <div style="display: flex; align-items: flex-start; justify-content: space-between; margin-bottom: 15px;">
+    <div>
+      <h3 style="margin: 0; color: var(--konecta-dark); font-size: 1rem; display: flex; align-items: center; gap: 8px;">
+        🏆 My Rewards
+      </h3>
+      <div id="my-rank-badge" class="rank-badge rank-novice">🔰 Novice</div>
+    </div>
+    <button class="view-btn" onclick="openLeaderboard()" style="font-size: 0.8rem; padding: 4px 10px;">View Leaderboard</button>
   </div>
+  
+  <div style="display: flex; align-items: center; gap: 15px;">
+    <div style="text-align: center; min-width: 60px;">
+      <div class="stat-value" id="my-level" style="font-size: 1.8rem; font-weight: 800; color: var(--text-color);">1</div>
+      <div class="stat-label" style="font-size: 0.7rem; color: var(--text-color-secondary); text-transform: uppercase;">Level</div>
+    </div>
+    
+    <div style="flex-grow: 1;">
+      <div style="display: flex; justify-content: space-between; font-size: 0.85rem; margin-bottom: 6px; font-weight: 500;">
+        <span id="my-points">0 XP</span>
+        <span id="xp-next" style="color: var(--text-color-secondary);">0 / 1000 to next</span>
+      </div>
+      <div style="background: #e5e7eb; border-radius: 10px; height: 10px; width: 100%; overflow: hidden;">
+         <div id="xp-bar" style="background: var(--konecta-blue); height: 100%; width: 0%; border-radius: 10px; transition: width 0.8s cubic-bezier(0.4, 0, 0.2, 1);"></div>
+      </div>
+    </div>
+  </div>
+</div>
 
   <div id="current-status-display" class="status-message" style="visibility: hidden; text-align: center; margin-top: 0; margin-bottom: 20px;"></div>
+
+  
   
   <div id="status" class="status-message"></div>
   
@@ -3250,6 +3328,7 @@ function populateUserInfo(user) {
   if (user.myBalances) populateMyBalances(user.myBalances);
   if (user.currentStatus) updateCurrentStatus(user.currentStatus);
   loadMyRequests();
+  if (user.gamification) initGamification(user);
 }
 
       function loadUserInfo() { 
@@ -8609,6 +8688,93 @@ function downloadPayrollReport() {
         .webGetPayrollExportData(start, end, targetEmails);
 }
 
+function initGamification(user) {
+  if (user && user.gamification) {
+    const pts = user.gamification.points || 0;
+    const lvl = user.gamification.level || 1;
+    
+    // 1. Determine Badge Info (Text & Color Class)
+    let badgeText = "🔰 Novice";
+    let badgeClass = "rank-novice";
+    let barColor = "#9ca3af"; // Default Gray
+
+    if (lvl >= 100) {
+      badgeText = "🔥 Legend";
+      badgeClass = "rank-legend";
+      barColor = "#ef4444";
+    } else if (lvl >= 50) {
+      badgeText = "💎 Master";
+      badgeClass = "rank-master";
+      barColor = "#2563eb";
+    } else if (lvl >= 20) {
+      badgeText = "🥇 Elite";
+      badgeClass = "rank-elite";
+      barColor = "#d97706";
+    } else if (lvl >= 10) {
+      badgeText = "🥈 Professional";
+      badgeClass = "rank-pro";
+      barColor = "#6b7280";
+    } else if (lvl >= 5) {
+      badgeText = "🥉 Apprentice";
+      badgeClass = "rank-apprentice";
+      barColor = "#ea580c";
+    }
+
+    // 2. Update UI Elements
+    document.getElementById('my-points').textContent = pts + " XP";
+    document.getElementById('my-level').textContent = lvl;
+    
+    // Update Badge Element
+    const badgeEl = document.getElementById('my-rank-badge');
+    if (badgeEl) {
+      badgeEl.textContent = badgeText;
+      badgeEl.className = `rank-badge ${badgeClass}`; // Reset and apply new class
+    }
+
+    // 3. Calculate Progress Bar
+    const currentLevelBase = (lvl - 1) * 1000;
+    const progress = pts - currentLevelBase;
+    const percent = Math.min(100, Math.max(0, (progress / 1000) * 100));
+    
+    document.getElementById('xp-bar').style.width = percent + "%";
+    document.getElementById('xp-bar').style.background = barColor; // Match bar color to rank
+    document.getElementById('xp-next').textContent = `${progress} / 1000 to next`;
+  }
+}
+
+function openLeaderboard() {
+  document.getElementById('leaderboard-modal').style.display = 'block';
+  document.getElementById('leaderboard-list').innerHTML = '<div class="spinner"></div>';
+  
+  google.script.run.withSuccessHandler(renderLeaderboard).webGetLeaderboard();
+}
+
+function renderLeaderboard(data) {
+  if (!data || data.length === 0) {
+    document.getElementById('leaderboard-list').innerHTML = "<p>No data yet.</p>";
+    return;
+  }
+  
+  let html = '<table class="data-table"><thead><tr><th>Rank</th><th>Name</th><th>Level</th><th>XP</th></tr></thead><tbody>';
+  
+  data.forEach((p, index) => {
+    let rankEmoji = "👏";
+    if (index === 0) rankEmoji = "🥇";
+    if (index === 1) rankEmoji = "🥈";
+    if (index === 2) rankEmoji = "🥉";
+    
+    html += `<tr>
+      <td>${rankEmoji} ${index + 1}</td>
+      <td>${p.name}</td>
+      <td>${p.level}</td>
+      <td><strong>${p.points}</strong></td>
+    </tr>`;
+  });
+  
+  html += '</tbody></table>';
+  document.getElementById('leaderboard-list').innerHTML = html;
+}
+
 
       // Initialize
       document.addEventListener("DOMContentLoaded", function() {
@@ -8891,6 +9057,19 @@ function downloadPayrollReport() {
   <div class="modal-footer">
     <button class="btn-secondary" onclick="closeRejectModal()">Cancel</button>
     <button class="btn-danger" onclick="submitRejection()">Confirm Rejection</button>
+  </div>
+</div>
+
+<div id="leaderboard-modal" class="modal">
+  <div class="modal-header">
+    <h2>🏅 Top Performers</h2>
+    <button class="close-btn" onclick="document.getElementById('leaderboard-modal').style.display='none'">&times;</button>
+  </div>
+  <div class="modal-body">
+    <div id="leaderboard-list">Loading...</div>
+  </div>
+  <div class="modal-footer">
+    <button class="btn-secondary" onclick="document.getElementById('leaderboard-modal').style.display='none'">Close</button>
   </div>
 </div>
 
