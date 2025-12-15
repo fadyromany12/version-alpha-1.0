@@ -1,0 +1,93 @@
+<!DOCTYPE html>
+<html>
+  <head>
+    <base target="_top">
+    <title>Join Our Team</title>
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;600;700&display=swap" rel="stylesheet">
+    <style>
+      :root { --konecta-dark: #2900c9; --konecta-blue: #00a9e0; --bg-color: #f4f6f8; }
+      body { font-family: 'Inter', sans-serif; background-color: var(--bg-color); display: flex; justify-content: center; align-items: center; min-height: 100vh; margin: 0; }
+      .container { background: white; padding: 40px; border-radius: 12px; box-shadow: 0 10px 25px rgba(0,0,0,0.1); width: 100%; max-width: 500px; }
+      h1 { color: var(--konecta-dark); text-align: center; margin-bottom: 10px; }
+      p { text-align: center; color: #666; margin-bottom: 30px; }
+      .form-group { margin-bottom: 15px; }
+      label { display: block; margin-bottom: 5px; font-weight: 600; font-size: 0.9rem; color: #333; }
+      input, select { width: 100%; padding: 10px; border: 1px solid #ddd; border-radius: 6px; font-size: 1rem; box-sizing: border-box; }
+      button { width: 100%; padding: 12px; background-color: var(--konecta-dark); color: white; border: none; border-radius: 6px; font-size: 1rem; font-weight: 600; cursor: pointer; transition: background 0.3s; }
+      button:hover { background-color: #1a0090; }
+      .logo { display: block; margin: 0 auto 20px auto; max-width: 150px; }
+      #message { text-align: center; margin-top: 20px; font-weight: 600; }
+      .success { color: green; }
+      .error { color: red; }
+    </style>
+  </head>
+  <body>
+    <div class="container">
+      <img src="https://image2url.com/images/1762976595272-13dc7db5-88f2-48e6-bffb-39d4830812e5.png" alt="Logo" class="logo">
+      <h1>Join Our Team</h1>
+      <p>Start your journey with us today.</p>
+      
+      <form id="app-form">
+        <div class="form-group">
+          <label>Full Name</label>
+          <input type="text" id="name" required>
+        </div>
+        <div class="form-group">
+          <label>Email Address</label>
+          <input type="email" id="email" required>
+        </div>
+        <div class="form-group">
+          <label>Phone Number</label>
+          <input type="tel" id="phone" required>
+        </div>
+        <div class="form-group">
+          <label>Position Applied For</label>
+          <select id="position">
+            <option value="Customer Service Agent">Customer Service Agent</option>
+            <option value="Technical Support">Technical Support</option>
+            <option value="Sales Representative">Sales Representative</option>
+            <option value="Team Leader">Team Leader</option>
+          </select>
+        </div>
+        <div class="form-group">
+          <label>Link to CV (Google Drive / LinkedIn)</label>
+          <input type="url" id="cv" placeholder="https://..." required>
+        </div>
+        <button type="button" onclick="submitApp()">Submit Application</button>
+      </form>
+      <div id="message"></div>
+    </div>
+
+    <script>
+      function submitApp() {
+        const btn = document.querySelector('button');
+        const msg = document.getElementById('message');
+        btn.disabled = true;
+        btn.innerText = "Submitting...";
+        msg.innerText = "";
+
+        const data = {
+          name: document.getElementById('name').value,
+          email: document.getElementById('email').value,
+          phone: document.getElementById('phone').value,
+          position: document.getElementById('position').value,
+          cv: document.getElementById('cv').value
+        };
+
+        google.script.run
+          .withSuccessHandler(() => {
+            document.getElementById('app-form').style.display = 'none';
+            msg.className = 'success';
+            msg.innerText = "Application Received! HR will contact you soon.";
+          })
+          .withFailureHandler(err => {
+            btn.disabled = false;
+            btn.innerText = "Submit Application";
+            msg.className = 'error';
+            msg.innerText = "Error: " + err.message;
+          })
+          .webSubmitApplication(data);
+      }
+    </script>
+  </body>
+</html>
