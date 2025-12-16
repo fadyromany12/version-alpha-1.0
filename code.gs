@@ -7105,3 +7105,4 @@ function generateNextEmpID(sheet) {
   }
   return `KOM-${maxId + 1}`;
 }
+
