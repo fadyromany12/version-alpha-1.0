@@ -1422,6 +1422,7 @@ function punch(action, targetUserName, puncherEmail, adminTimestamp) {
     // Execution
     adherenceSheet.getRange(row, 3).setValue(nowTimestamp); // Login Time
     adherenceSheet.getRange(row, 14).setValue("Present"); // Leave Type
+    adherenceSheet.getRange(row, 20).setValue("No");
     updateState(adherenceSheet, row, "Login", nowTimestamp);
     logsSheet.appendRow([new Date(), userName, userEmail, action, nowTimestamp]);
     return `Welcome ${userName}. You are successfully Logged In.`;
@@ -1618,18 +1619,29 @@ function validateScheduleLock(userEmail, now) {
 
 // --- HELPER: End Shift Metrics (Overtime/Early Leave) ---
 function calculateEndShiftMetrics(sheet, row, userEmail, now) {
-    const schedule = getScheduleForDate(userEmail, now);
-    // If no schedule, we cannot calculate accurate allowances
-    if (!schedule || !schedule.end) return;
 
+  // --- FIX 1: Calculate Net Login Hours (Logout - Login) ---
+    // Col C (Index 3) is Login Time
+    const loginTimeVal = sheet.getRange(row, 3).getValue();
+    if (loginTimeVal) {
+        const loginTime = new Date(loginTimeVal);
+        const durationMs = now.getTime() - loginTime.getTime();
+        const durationHours = durationMs / (1000 * 60 * 60); // Convert to Hours
+        
+        // Col W (Index 23) is NetLoginHours
+        sheet.getRange(row, 23).setValue(durationHours.toFixed(2));
+    }
+const schedule = getScheduleForDate(userEmail, now);
+    // If no schedule, we cannot calculate accurate allowances/OT
+    if (!schedule || !schedule.end) return;
+    
     const schedEnd = new Date(schedule.end); // Planned End
-    const actualOut = new Date(now); // Actual Logout
+    const actualOut = new Date(now);         // Actual Logout
 
     // 1. OT / Early Leave Logic
     const diffSec = (actualOut - schedEnd) / 1000;
-    
     if (diffSec > 0) {
-        const threshold = getBreakConfig("Overtime Post-Shift").default || 300; 
+        const threshold = getBreakConfig("Overtime Post-Shift").default || 300;
         sheet.getRange(row, 12).setValue(diffSec > threshold ? diffSec : 0); // Overtime
         sheet.getRange(row, 13).setValue(0); // No Early Leave
     } else {
@@ -1637,21 +1649,17 @@ function calculateEndShiftMetrics(sheet, row, userEmail, now) {
         sheet.getRange(row, 13).setValue(Math.abs(diffSec)); // Early Leave
     }
     
-    // 2. ALLOWANCE LOGIC (FIXED)
+    // 2. ALLOWANCE LOGIC
     // Rule: Eligible if logout is AFTER 21:30 (9:30 PM) OR before 06:00 AM (Overnight)
     const hour = actualOut.getHours();
     const minutes = actualOut.getMinutes();
     
-    // Logic: 
-    // Hour is 22 or 23 (10pm, 11pm) -> YES
-    // Hour is 21 (9pm) AND minutes >= 30 -> YES
-    // Hour is < 7 (Midnight to morning) -> YES
     const isLateShift = (hour > 21) || (hour === 21 && minutes >= 30) || (hour < 7);
-
+    
     // Apply to columns AA (27) and AB (28)
     if (isLateShift) {
         sheet.getRange(row, 27).setValue(1); // Overnight Eligible
-        sheet.getRange(row, 28).setValue(1); // Transport Eligible (Applied to both)
+        sheet.getRange(row, 28).setValue(1); // Transport Eligible
     } else {
         sheet.getRange(row, 27).setValue(0);
         sheet.getRange(row, 28).setValue(0);
@@ -6859,9 +6867,24 @@ function webGetPayrollExportData(startDateStr, endDateStr, targetEmails) {
   const { userEmail, userData, ss } = getAuthorizedContext('VIEW_FULL_DASHBOARD');
   const timeZone = Session.getScriptTimeZone();
   
-  // --- FIX: Handle Empty Dates (All Time) ---
-  const startYMD = startDateStr ? startDateStr : "1900-01-01";
-  const endYMD = endDateStr ? endDateStr : "2100-12-31";
+  // --- FIX: Use Robust Date Objects (Like Dashboard) ---
+  let startObj, endObj;
+  
+  // Set Start Date to beginning of day (00:00:00)
+  if (startDateStr) {
+    startObj = new Date(startDateStr);
+    startObj.setHours(0, 0, 0, 0);
+  } else {
+    startObj = new Date("1900-01-01");
+  }
+
+  // Set End Date to end of day (23:59:59)
+  if (endDateStr) {
+    endObj = new Date(endDateStr);
+    endObj.setHours(23, 59, 59, 999);
+  } else {
+    endObj = new Date("2100-12-31");
+  }
 
   // Load Data
   const adherenceData = getOrCreateSheet(ss, SHEET_NAMES.adherence).getDataRange().getValues();
@@ -6872,12 +6895,15 @@ function webGetPayrollExportData(startDateStr, endDateStr, targetEmails) {
   const emailList = Array.isArray(targetEmails) ? targetEmails : [targetEmails];
   const normalizedTargets = new Set(emailList.map(e => String(e).trim().toLowerCase()));
   const processAll = normalizedTargets.has('all_users') || normalizedTargets.has('all') || normalizedTargets.size === 0;
-
+  
   const reportMap = {};
 
   // --- Helper to add data ---
-  function addToReport(dateStr, email, name, type, dataObj) {
+  function addToReport(dateObj, email, name, type, dataObj) {
+    // Use formatted string as KEY to group data by day
+    const dateStr = Utilities.formatDate(dateObj, timeZone, "yyyy-MM-dd");
     const key = `${email}|${dateStr}`;
+    
     if (!reportMap[key]) {
       reportMap[key] = { date: dateStr, email: email, name: name, schedule: {}, adherence: {} };
     }
@@ -6888,31 +6914,32 @@ function webGetPayrollExportData(startDateStr, endDateStr, targetEmails) {
   // 1. Process Schedule
   for (let i = 1; i < scheduleData.length; i++) {
     const row = scheduleData[i];
-    const sEmail = String(row[6] || "").trim().toLowerCase();
+    const sEmail = String(row[6] || "").trim().toLowerCase(); // Col G
     
     if (!sEmail) continue;
     if (!processAll && !normalizedTargets.has(sEmail)) continue;
 
-    const sDate = parseDate(row[1]);
+    const sDate = parseDate(row[1]); // Col B
     if (!sDate) continue;
-    const sDateStr = Utilities.formatDate(sDate, timeZone, "yyyy-MM-dd");
     
-    if (sDateStr >= startYMD && sDateStr <= endYMD) {
-       addToReport(sDateStr, sEmail, row[0], 'sched', { start: row[2], end: row[4], type: row[5] });
+    // FIX: Compare Date Objects
+    if (sDate >= startObj && sDate <= endObj) {
+       addToReport(sDate, sEmail, row[0], 'sched', { start: row[2], end: row[4], type: row[5] });
     }
   }
 
   // 2. Process Adherence
   for (let i = 1; i < adherenceData.length; i++) {
     const row = adherenceData[i];
-    const rowDate = parseDate(row[0]);
+    const rowDate = parseDate(row[0]); // Col A
     if (!rowDate) continue;
     
-    const rowDateStr = Utilities.formatDate(rowDate, timeZone, "yyyy-MM-dd");
-    if (rowDateStr >= startYMD && rowDateStr <= endYMD) {
-        const name = String(row[1] || "").trim();
+    // FIX: Compare Date Objects
+    if (rowDate >= startObj && rowDate <= endObj) {
+        const name = String(row[1] || "").trim(); // Col B
         let email = userData.nameToEmail[name];
         
+        // Fallback: Try finding by name if map lookup failed (e.g. casing issues)
         if (!email) {
            const u = userData.userList.find(u => u.name.toLowerCase() === name.toLowerCase());
            if (u) email = u.email;
@@ -6921,32 +6948,36 @@ function webGetPayrollExportData(startDateStr, endDateStr, targetEmails) {
         if (email) {
             email = email.toLowerCase();
             if (processAll || normalizedTargets.has(email)) {
-                addToReport(rowDateStr, email, name, 'adh', row); 
+                addToReport(rowDate, email, name, 'adh', row);
             }
         }
     }
   }
 
   const exportRows = [];
-
+  
   // 3. Build Final Rows
   Object.values(reportMap).forEach(item => {
     const row = item.adherence || []; 
     const sch = item.schedule || {};
     
-    // OT Lookup
+    // OT Lookup (Matches exact date string key)
     let approvedOT = 0;
     let otType = "";
+    
     for(let j=1; j<otData.length; j++) {
         const otEmpID = otData[j][1];
-        const otUser = userData.userList.find(u => u.empID === otEmpID);
-        if (otUser && otUser.email.toLowerCase() === item.email) {
-            const otDate = parseDate(otData[j][3]);
-            if (otDate) {
-                const otDateStr = Utilities.formatDate(otDate, timeZone, "yyyy-MM-dd");
-                if (otDateStr === item.date && otData[j][8] === 'Approved') {
-                    approvedOT += parseFloat(otData[j][6] || 0);
-                    otType = otData[j][12];
+        if(otEmpID) {
+            const otUser = userData.userList.find(u => u.empID === otEmpID);
+            if (otUser && otUser.email.toLowerCase() === item.email) {
+                const otDate = parseDate(otData[j][3]);
+                if (otDate) {
+                    const otDateStr = Utilities.formatDate(otDate, timeZone, "yyyy-MM-dd");
+                    // Match the grouped date string
+                    if (otDateStr === item.date && otData[j][8] === 'Approved') {
+                        approvedOT += parseFloat(otData[j][6] || 0);
+                        otType = otData[j][12];
+                    }
                 }
             }
         }
@@ -6959,14 +6990,15 @@ function webGetPayrollExportData(startDateStr, endDateStr, targetEmails) {
         return val ? val.toString().substring(0,8) : "";
     };
 
-    let status = row[13]; 
-    let absent = row[19] || "No";
-    
+    let status = row[13]; // Leave Type from Adherence
+    let absent = row[19] || "No"; // Absent Flag from Adherence
+
+    // Infer status if missing from Adherence (e.g. Day Off or Scheduled but no punch)
     if (!status) {
        if (sch.type && sch.type !== 'Present' && sch.type !== 'Triple Paid' && sch.type !== 'Work Day Off') {
-          status = sch.type; 
+          status = sch.type; // e.g. "Sick", "Annual" from Schedule
        } else if (sch.start) {
-          status = "Absent";
+          status = "Absent"; // Scheduled but no adherence record found
           absent = "Yes";
        } else {
           status = "Off";
