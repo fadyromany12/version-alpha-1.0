@@ -4679,29 +4679,35 @@ function populateHistoryReport(data) {
         return result;
       }
 
-      // --- NEW: Function to download the CSV template ---
-      // --- PHASE 9: Updated CSV Template ---
-      function downloadScheduleTemplate() {
-        const headers = "Name,StartDate,ShiftStartTime,EndDate,ShiftEndTime,LeaveType,agent email,Break1Start,Break1End,LunchStart,LunchEnd,Break2Start,Break2End";
-        
-        const example1 = "John Doe,11/30/2025,09:00,11/30/2025,18:00,Present,john.doe@konecta.com,11:00,11:15,13:00,13:30,16:00,16:15";
-        const example2 = "Jane Smith,11/30/2025,,,,Sick,jane.smith@konecta.com,,,,,,";
-        const example3 = "Peter Jones,12/01/2025,14:00,12/01/2025,23:00,Present,peter.jones@konecta.com,16:00,16:15,18:00,18:30,21:00,21:15";
-        
-        const csvContent = [headers, example1, example2, example3].join("\r\n");
+      // [index.html] REPLACE downloadScheduleTemplate FUNCTION
+function downloadScheduleTemplate() {
+  const headers = "Name,StartDate,ShiftStartTime,ShiftEndTime,LeaveType,agent email";
+  
+  const rows = [
+    // Standard Shift
+    "John Doe,2025-11-30,09:00,18:00,Present,john.doe@konecta.com",
+    // Day Off
+    "Jane Smith,2025-11-30,,,Day Off,jane.smith@konecta.com",
+    // Canceled Day Off (Triple Paid) - Must have times
+    "Mike Ross,2025-11-30,10:00,19:00,Cancel Day Off,mike.ross@konecta.com",
+    // Overnight Shift
+    "Rachel Zane,2025-11-30,22:00,07:00,Present,rachel.zane@konecta.com"
+  ];
+  
+  const csvContent = headers + "\r\n" + rows.join("\r\n");
 
-        const blob = new Blob([csvContent], { type: 'text/csv;charset=utf-8;' });
-        const link = document.createElement("a");
-        if (link.download !== undefined) { 
-          const url = URL.createObjectURL(blob);
-          link.setAttribute("href", url);
-          link.setAttribute("download", "schedule_template_v2.csv");
-          link.style.visibility = 'hidden';
-          document.body.appendChild(link);
-          link.click();
-          document.body.removeChild(link);
-        }
-      }
+  const blob = new Blob([csvContent], { type: 'text/csv;charset=utf-8;' });
+  const link = document.createElement("a");
+  if (link.download !== undefined) { 
+    const url = URL.createObjectURL(blob);
+    link.setAttribute("href", url);
+    link.setAttribute("download", "Schedule_Import_Template.csv");
+    link.style.visibility = 'hidden';
+    document.body.appendChild(link);
+    link.click();
+    document.body.removeChild(link);
+  }
+}
       // --- END OF NEW FUNCTION ---
 
       // --- Dashboard Functions ---
@@ -8634,6 +8640,8 @@ function renderTimelineBars(events) {
     return bars;
 }
 
+// [index.html] REPLACE EXISTING downloadPayrollReport FUNCTION
+// [index.html] REPLACE EXISTING downloadPayrollReport FUNCTION
 function downloadPayrollReport() {
     const start = document.getElementById('an-start-date').value;
     const end = document.getElementById('an-end-date').value;
@@ -8644,14 +8652,11 @@ function downloadPayrollReport() {
         targetEmails = JSON.parse(container.dataset.value || "[]");
     } catch(e) {}
 
-    // Validation
-    if (!start || !end) {
-        setStatus('analytics-status', 'error', 'Please select dates for the payroll export.');
-        return;
-    }
+    // --- FIX: Allow empty dates (defaults to All Time) ---
+    // Remove the strict "if (!start || !end)" check.
+    
     if (targetEmails.length === 0) {
-        setStatus('analytics-status', 'error', 'Please select at least one User.');
-        return;
+        targetEmails = ["ALL_USERS"]; 
     }
     
     setStatus('analytics-status', 'processing', 'Generating Payroll CSV...');
@@ -8659,31 +8664,56 @@ function downloadPayrollReport() {
     google.script.run
         .withSuccessHandler(csvData => {
             if (!csvData || csvData.length === 0) {
-                setStatus('analytics-status', 'error', 'No data found for this period. Try extending the date range.');
+                setStatus('analytics-status', 'error', 'No records found. Try adjusting filters.');
                 return;
             }
             
-            // ... (CSV generation logic remains the same) ...
+            // Build CSV String
+            const headers = [
+                "Date", "Name", "Email", "Status", "Login", "Logout", 
+                "Net Worked Hours", "Lateness (Mins)", "Early Leave (Mins)", 
+                "Break Exceed (Mins)", "Lunch Exceed (Mins)", 
+                "Approved OT (Hours)", "OT Type", "IsAbsent", 
+                "Overnight Allowance", "Transport Allowance"
+            ];
             
-            let csvContent = "data:text/csv;charset=utf-8,";
-            csvContent += "Date,Name,Email,Status,Login,Logout,Net Worked Hours,Lateness (Mins),Early Leave (Mins),Break Exceed (Mins),Lunch Exceed (Mins),Approved OT (Hours),OT Type,IsAbsent\r\n";
+            let csvContent = headers.join(",") + "\r\n";
 
             csvData.forEach(row => {
-                csvContent += `${row.Date},"${row.Name}","${row.Email}",${row.Status},${row.Login},${row.Logout},${row.NetWorkedHours},${row.LatenessMins},${row.EarlyLeaveMins},${row.BreakExceedMins},${row.LunchExceedMins},${row.ApprovedOTHours},${row.OTType},${row.IsAbsent}\r\n`;
+                const safe = (val) => `"${String(val || "").replace(/"/g, '""')}"`;
+                const line = [
+                    row.Date, safe(row.Name), safe(row.Email), safe(row.Status),
+                    row.Login, row.Logout, row.NetWorkedHours,
+                    row.LatenessMins, row.EarlyLeaveMins,
+                    row.BreakExceedMins, row.LunchExceedMins,
+                    row.ApprovedOTHours, safe(row.OTType), row.IsAbsent,
+                    row.OvernightAllowance, row.TransportAllowance
+                ];
+                csvContent += line.join(",") + "\r\n";
             });
 
-            const encodedUri = encodeURI(csvContent);
+            // --- FIX: ROBUST DOWNLOAD TRIGGER ---
+            const blob = new Blob([csvContent], { type: 'text/csv;charset=utf-8;' });
+            const url = URL.createObjectURL(blob);
             const link = document.createElement("a");
-            link.setAttribute("href", encodedUri);
-            link.setAttribute("download", `Payroll_Export_${start}_to_${end}.csv`);
-            document.body.appendChild(link);
-            link.click();
-            document.body.removeChild(link);
             
-            setStatus('analytics-status', 'success', 'Download started.');
+            // Generate filename based on dates or "All_Time"
+            const filenameDate = (start && end) ? `${start}_to_${end}` : "All_Time";
+            
+            link.setAttribute("href", url);
+            link.setAttribute("download", `Payroll_Export_${filenameDate}.csv`);
+            link.style.display = 'none'; // Use display:none instead of visibility:hidden
+            document.body.appendChild(link);
+            
+            // Timeout ensures DOM is ready
+            setTimeout(() => {
+                link.click();
+                document.body.removeChild(link);
+                setStatus('analytics-status', 'success', 'Download started.');
+            }, 100);
         })
         .withFailureHandler(err => {
-            setStatus('analytics-status', 'error', err.message);
+            setStatus('analytics-status', 'error', 'Export Failed: ' + err.message);
         })
         .webGetPayrollExportData(start, end, targetEmails);
 }
