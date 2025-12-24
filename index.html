@@ -8641,20 +8641,18 @@ function renderTimelineBars(events) {
 }
 
 // [index.html] REPLACE EXISTING downloadPayrollReport FUNCTION
-// [index.html] REPLACE EXISTING downloadPayrollReport FUNCTION
 function downloadPayrollReport() {
     const start = document.getElementById('an-start-date').value;
     const end = document.getElementById('an-end-date').value;
     
+    // Get Users from dataset
     const container = document.getElementById('analytics-user-select-container');
     let targetEmails = [];
     try {
         targetEmails = JSON.parse(container.dataset.value || "[]");
     } catch(e) {}
 
-    // --- FIX: Allow empty dates (defaults to All Time) ---
-    // Remove the strict "if (!start || !end)" check.
-    
+    // Default to ALL_USERS if empty selection (same logic as Generate Report)
     if (targetEmails.length === 0) {
         targetEmails = ["ALL_USERS"]; 
     }
@@ -8692,20 +8690,18 @@ function downloadPayrollReport() {
                 csvContent += line.join(",") + "\r\n";
             });
 
-            // --- FIX: ROBUST DOWNLOAD TRIGGER ---
+            // Trigger Download
             const blob = new Blob([csvContent], { type: 'text/csv;charset=utf-8;' });
             const url = URL.createObjectURL(blob);
             const link = document.createElement("a");
             
-            // Generate filename based on dates or "All_Time"
             const filenameDate = (start && end) ? `${start}_to_${end}` : "All_Time";
             
             link.setAttribute("href", url);
             link.setAttribute("download", `Payroll_Export_${filenameDate}.csv`);
-            link.style.display = 'none'; // Use display:none instead of visibility:hidden
+            link.style.display = 'none';
             document.body.appendChild(link);
             
-            // Timeout ensures DOM is ready
             setTimeout(() => {
                 link.click();
                 document.body.removeChild(link);
