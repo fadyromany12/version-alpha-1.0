@@ -4684,15 +4684,18 @@ function downloadScheduleTemplate() {
   const headers = "Name,StartDate,ShiftStartTime,ShiftEndTime,LeaveType,agent email";
   
   const rows = [
-    // Standard Shift
-    "John Doe,2025-11-30,09:00,18:00,Present,john.doe@konecta.com",
-    // Day Off
-    "Jane Smith,2025-11-30,,,Day Off,jane.smith@konecta.com",
-    // Canceled Day Off (Triple Paid) - Must have times
-    "Mike Ross,2025-11-30,10:00,19:00,Cancel Day Off,mike.ross@konecta.com",
-    // Overnight Shift
-    "Rachel Zane,2025-11-30,22:00,07:00,Present,rachel.zane@konecta.com"
-  ];
+  // Standard Shift
+  'Fady Bekhet,2025-11-30,09:00,18:00,Present,"=proper(SUBSTITUTE(A2,"" "","".""))&""@konecta.com"',
+  
+  // Day Off
+  'Jane Smith,2025-11-30,,,Day Off,use the formula in the cell above and place a (") after .com',
+  
+  // Canceled Day Off (Triple Paid) - Must have times
+  'Mike Ross,2025-11-30,10:00,19:00,Cancel Day Off,mike.ross@konecta.com',
+  
+  // Overnight Shift
+  'Rachel Zane,2025-11-30,22:00,07:00,Present,rachel.zane@konecta.com'
+];
   
   const csvContent = headers + "\r\n" + rows.join("\r\n");
 
