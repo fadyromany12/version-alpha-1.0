@@ -4239,7 +4239,7 @@ function formatStatusWithIcon(status) {
           .webGetMySchedule();
       }
 
-     // REPLACE this function in your <script> tag
+// REPLACE this function in your <script> tag in index.html
 function populateMySchedule(scheduleData) {
   const displayDiv = document.getElementById('my-schedule-display');
   
@@ -4274,25 +4274,29 @@ function populateMySchedule(scheduleData) {
   const timeZone = Intl.DateTimeFormat().resolvedOptions().timeZone;
   const todayStr = today.toLocaleDateString('en-US', { timeZone: timeZone });
 
-
   scheduleData.forEach(day => {
     const scheduleDate = new Date(day.date);
     const scheduleDateStr = scheduleDate.toLocaleDateString('en-US', { timeZone: timeZone });
-    
     const dayStr = scheduleDate.toLocaleDateString('en-US', { weekday: 'long', timeZone: timeZone });
-    const dateStr = formatDate(day.date);
+    const dateStr = new Date(day.date).toLocaleDateString("en-US", { year: 'numeric', month: '2-digit', day: '2-digit' });
     
+    // Check if End Date is different from Start Date
+    let endTimeDisplay = day.endTime || '--:--';
+    if (day.endDate && day.endDate !== dateStr) {
+       // Visual indicator for overnight shift
+       endTimeDisplay += ' <span style="font-size:0.7em; color:var(--konecta-blue); font-weight:bold;">(+1 Day)</span>';
+    }
+
     let trClass = '';
     if (scheduleDateStr === todayStr) {
       trClass = 'day-today';
     }
 
     let statusClass = '';
-    // *** MODIFIED: Use new "Day Off" logic ***
     if (day.leaveType !== 'Present' && day.leaveType !== 'Day Off') {
-      statusClass = 'status-leave'; // Red color for sick, absent, etc.
+      statusClass = 'status-leave'; 
     } else if (day.leaveType === 'Day Off') {
-      statusClass = 'status-break'; // Blue-ish color for Day Off
+      statusClass = 'status-break'; 
     }
 
     html += `
@@ -4302,7 +4306,7 @@ function populateMySchedule(scheduleData) {
         <td>${dayStr}</td>
         <td class="${statusClass}">${day.leaveType}</td>
         <td>${day.startTime || '--:--'}</td>
-        <td>${day.endTime || '--:--'}</td>
+        <td>${endTimeDisplay}</td>
       </tr>
     `;
   });
@@ -4679,23 +4683,24 @@ function populateHistoryReport(data) {
         return result;
       }
 
-      // [index.html] REPLACE downloadScheduleTemplate FUNCTION
+// [index.html] REPLACE downloadScheduleTemplate FUNCTION
 function downloadScheduleTemplate() {
-  const headers = "Name,StartDate,ShiftStartTime,ShiftEndTime,LeaveType,agent email";
-  
+  // *** ADDED "ShiftEndDate" to the headers ***
+  const headers = "Name,StartDate,ShiftStartTime,ShiftEndDate,ShiftEndTime,LeaveType,agent email";
   const rows = [
   // Standard Shift
-  'Fady Bekhet,2025-11-30,09:00,18:00,Present,"=proper(SUBSTITUTE(A2,"" "","".""))&""@konecta.com"',
+  'Fady Bekhet,2025-11-30,09:00,2025-11-30,18:00,Present,"=proper(SUBSTITUTE(A2,"" "","".""))&""@konecta.com"',
   
   // Day Off
-  'Jane Smith,2025-11-30,,,Day Off,use the formula in the cell above and place a (") after .com',
+  'Rachel Zane,2025-11-30,22:00,2025-12-01,07:00,Present,use the formula in the cell above and place a (") after .com',
   
   // Canceled Day Off (Triple Paid) - Must have times
-  'Mike Ross,2025-11-30,10:00,19:00,Cancel Day Off,mike.ross@konecta.com',
+  'Mike Ross,2025-11-30,10:00,2025-11-30,19:00,Cancel Day Off,mike.ross@konecta.com',
   
   // Overnight Shift
-  'Rachel Zane,2025-11-30,22:00,07:00,Present,rachel.zane@konecta.com'
+  'Jane Smith,2025-11-30,,2025-11-30,,Day Off,jane.smith@konecta.com'
 ];
+  
   
   const csvContent = headers + "\r\n" + rows.join("\r\n");
 
