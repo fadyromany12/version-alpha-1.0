@@ -1244,8 +1244,28 @@ function getUserInfo() {
       const newName = [firstName, lastName].join(' ').trim();
       const newEmpID = "KOM-PENDING-" + new Date().getTime();
       
-      // Append with default Gamification Columns (0 Points, Lvl 1, Novice)
-      dbSheet.appendRow([newEmpID, newName || userEmail, userEmail, 'agent', 'Pending', "", "", 0, 0, 0, "", "", "", "", "", "", "", "", "", "", "", "", "", "", "", "Pending", 0, 1, "🔰 Novice"]);
+      // --- FIX: UPDATED COLUMN MAPPING (31 Columns) ---
+      // 1-10: ID, Name, Email, Role, AccountStatus, DM, FM, Annual, Sick, Casual
+      // 11-27: Empty placeholders (CurrentProject...ExitDate) -> 17 empty strings
+      // 28: Status ("Pending")
+      // 29-31: Gamification (Points, Level, Badge)
+      dbSheet.appendRow([
+        newEmpID, 
+        newName || userEmail, 
+        userEmail, 
+        'agent', 
+        'Pending', 
+        "", "", 
+        0, 0, 0, 
+        // 17 Empty placeholders for Cols 11-27
+        "", "", "", "", "", "", "", "", "", "", "", "", "", "", "", "", "",
+        // Col 28: Status
+        "Pending", 
+        // Col 29-31: Gamification
+        0, 1, "🔰 Novice"
+      ]);
+      // ------------------------------------------------
+
       SpreadsheetApp.flush(); 
       userData = getUserDataFromDb(ss);
     }
@@ -1254,23 +1274,20 @@ function getUserInfo() {
     const userName = userData.emailToName[userEmail] || "";
     const role = userData.emailToRole[userEmail] || 'agent';
     
-    // --- [FIX] ROBUST GAMIFICATION FETCH ---
+    // --- ROBUST GAMIFICATION FETCH ---
     const userRow = userData.emailToRow[userEmail];
     let gamification = { points: 0, level: 1, badge: "🔰 Novice" };
-    
     if (userRow) {
        const headers = dbSheet.getRange(1, 1, 1, dbSheet.getLastColumn()).getValues()[0];
        const ptsIdx = headers.indexOf("GamificationPoints");
        const lvlIdx = headers.indexOf("GamificationLevel");
        
        if (ptsIdx > -1 && lvlIdx > -1) {
-          // Fetch only specific cells to be fast
           const pointsVal = dbSheet.getRange(userRow, ptsIdx + 1).getValue();
           const levelVal = dbSheet.getRange(userRow, lvlIdx + 1).getValue();
           
           gamification.points = Number(pointsVal) || 0;
           gamification.level = Number(levelVal) || 1;
-          // Calculate badge dynamically based on level
           gamification.badge = getBadgeFromLevel(gamification.level);
        }
     }
@@ -1312,7 +1329,7 @@ function getUserInfo() {
       otPre: getBreakConfig("Overtime Pre-Shift").default,
       otPost: getBreakConfig("Overtime Post-Shift").default
     };
-    
+
     return {
       name: userName, 
       email: userEmail,
@@ -1326,7 +1343,7 @@ function getUserInfo() {
       currentStatus: currentStatus,
       permissions: myPermissions,
       breakRules: breakRules,
-      gamification: gamification // Sending to frontend
+      gamification: gamification 
     };
   } catch (e) { throw new Error("Failed in getUserInfo: " + e.message); }
 }
@@ -2248,7 +2265,7 @@ function timeDiffInSeconds(start, end) {
 }
 
 
-// ================= DAILY AUTO-LOG FUNCTION (FIXED) =================
+// ================= DAILY AUTO-LOG FUNCTION (WITH RED FLAG FOR GUESSED NAMES) =================
 function dailyLeaveSweeper() {
   const ss = getSpreadsheet();
   const scheduleSheet = getOrCreateSheet(ss, SHEET_NAMES.schedule);
@@ -2267,9 +2284,11 @@ function dailyLeaveSweeper() {
   const adherenceData = adherenceSheet.getDataRange().getValues();
   const punchedMap = new Set();
   
+  // 1. Build map of existing punches (Key: Email + Date)
   for (let i = 1; i < adherenceData.length; i++) {
     const rowDate = parseDate(adherenceData[i][0]);
     const name = adherenceData[i][1];
+    
     if (rowDate && name) {
       const email = userData.nameToEmail[name];
       if (email) {
@@ -2282,17 +2301,19 @@ function dailyLeaveSweeper() {
   const scheduleData = scheduleSheet.getDataRange().getValues();
   let updates = 0;
 
+  // 2. Scan Schedule
   for (let i = 1; i < scheduleData.length; i++) {
-    const schEmail = String(scheduleData[i][6]).toLowerCase(); 
+    const schEmail = String(scheduleData[i][6]).trim().toLowerCase();
     const schDateRaw = scheduleData[i][1]; 
     let schLeaveType = String(scheduleData[i][5] || "").trim();
-    if (schLeaveType === "") schLeaveType = "Present"; 
-
+    
+    if (schLeaveType === "") schLeaveType = "Present";
     if (!schEmail || !schDateRaw) continue;
 
     const schDate = parseDate(schDateRaw);
     if (!schDate) continue;
-
+    
+    // Only look at past dates
     if (schDate < startDate || schDate > endDate) continue;
     
     const dateKey = `${schEmail}|${Utilities.formatDate(schDate, timeZone, "yyyy-MM-dd")}`;
@@ -2301,34 +2322,67 @@ function dailyLeaveSweeper() {
 
     // --- LOGIC ---
     let finalStatus = "Absent";
-    let isAbsentFlag = "No"; 
+    let isAbsentFlag = "No";
 
-    if (schLeaveType.toLowerCase() === 'day off') continue;
+    if (schLeaveType.toLowerCase() === 'day off') continue; 
 
-    // If expected to work but didn't punch -> Absent
     if (['present', 'triple paid', 'work day off'].includes(schLeaveType.toLowerCase())) {
         finalStatus = "Absent";
         isAbsentFlag = "Yes"; 
     } else {
-        // Sick, Annual, Casual are NOT Absent violations
-        finalStatus = schLeaveType; 
+        finalStatus = schLeaveType;
         isAbsentFlag = "No"; 
     }
 
+    // --- SMART NAME RESOLUTION ---
     const userObj = userData.userList.find(u => u.email === schEmail);
-    const officialName = userObj ? userObj.name : schEmail; 
+    const scheduleName = scheduleData[i][0]; // Col A from Schedule
+    
+    let officialName = "";
+    let isNameGuessed = false; // Flag to track if we guessed
+
+    // Priority 1: Use Database Name (Most Accurate)
+    if (userObj && userObj.name) {
+        officialName = userObj.name;
+    } 
+    // Priority 2: Use Schedule Name (if valid)
+    else if (scheduleName && !String(scheduleName).includes('@')) {
+        officialName = scheduleName;
+    }
+    // Priority 3: Extract Name from Email (Fallback)
+    else {
+        isNameGuessed = true; // Mark as guessed
+        const namePart = schEmail.split('@')[0]; 
+        if (namePart) {
+            officialName = namePart
+                .replace(/[._]/g, ' ')
+                .replace(/\b\w/g, c => c.toUpperCase());
+        } else {
+            officialName = schEmail; 
+        }
+    }
+    // ----------------------------------
     
     const row = adherenceSheet.getLastRow() + 1;
     adherenceSheet.getRange(row, 1).setValue(schDate);        
-    adherenceSheet.getRange(row, 2).setValue(officialName);   
-    adherenceSheet.getRange(row, 14).setValue(finalStatus);   
-    adherenceSheet.getRange(row, 20).setValue(isAbsentFlag); // Explicit Yes/No
     
-    // Initialize Allowances to "No" for absent records
-    adherenceSheet.getRange(row, 27).setValue("No"); 
+    // Set Name and Color if Guessed
+    const nameCell = adherenceSheet.getRange(row, 2);
+    nameCell.setValue(officialName);
+    
+    if (isNameGuessed) {
+        nameCell.setBackground("#F4C7C3"); // Light Red Background
+        nameCell.setNote("⚠️ Name auto-generated from email. User not found in Database.");
+    } else {
+        nameCell.setBackground(null); // Clear background if normal
+    }
+
+    adherenceSheet.getRange(row, 14).setValue(finalStatus);   
+    adherenceSheet.getRange(row, 20).setValue(isAbsentFlag);
+    adherenceSheet.getRange(row, 27).setValue("No");
     adherenceSheet.getRange(row, 28).setValue("No"); 
 
-    punchedMap.add(dateKey);
+    punchedMap.add(dateKey); 
     logsSheet.appendRow([new Date(), "System Sweeper", schEmail, "Auto-Log", `Marked as ${finalStatus}`]);
     updates++;
   }
@@ -4173,45 +4227,63 @@ function parseDate(dateInput) {
  * NEW: Robustly parses a time from CSV, handling strings and serial numbers (fractions).
  * Returns a string in HH:mm:ss format.
  */
+/**
+ * NEW: Robustly parses a time from CSV.
+ * Handles:
+ * 1. Time Strings ("12:00", "12:00:00", "12:00 PM")
+ * 2. Full Date+Time Strings ("2025-11-10 12:00:00")
+ * 3. Excel Serial Numbers (0.5 or 45200.5)
+ * Returns a string in HH:mm:ss format.
+ */
 function parseCsvTime(timeInput, timeZone) {
-  if (timeInput === null || timeInput === undefined || timeInput === "") return ""; // Allow empty time
+  if (timeInput === null || timeInput === undefined || timeInput === "") return "";
 
   try {
-    // Check if it's a serial number (e.g., 0.5 for 12:00 PM)
-    if (typeof timeInput === 'number' && timeInput >= 0 && timeInput <= 1) { // 1.0 is 24:00, which is 00:00
-      // Handle edge case 1.0 = 00:00:00
-      if (timeInput === 1) return "00:00:00"; 
-      
-      const totalSeconds = Math.round(timeInput * 86400);
+    // 1. Handle Numbers (Excel Serial Dates/Times)
+    if (typeof timeInput === 'number') {
+      // If number > 1 (e.g., 45230.5), it's a Date+Time serial. Take the fractional part.
+      // If number <= 1 (e.g., 0.5), it's just Time.
+      let val = timeInput;
+      if (val > 1) val = val % 1; 
+
+      // Handle edge case where exactly 1.0 or 0.0 means midnight
+      if (val === 0 || Math.abs(val - 1) < 0.00001) return "00:00:00";
+
+      const totalSeconds = Math.round(val * 86400);
       const hours = Math.floor(totalSeconds / 3600);
       const minutes = Math.floor((totalSeconds % 3600) / 60);
       const seconds = totalSeconds % 60;
       
-      const hh = String(hours).padStart(2, '0');
-      const mm = String(minutes).padStart(2, '0');
-      const ss = String(seconds).padStart(2, '0');
-      
-      return `${hh}:${mm}:${ss}`;
+      return `${String(hours).padStart(2, '0')}:${String(minutes).padStart(2, '0')}:${String(seconds).padStart(2, '0')}`;
     }
 
-    // Check if it's a string (e.g., "12:00" or "12:00:00" or "12:00 PM")
-    if (typeof timeInput === 'string') {
-      // Try parsing as a date (handles "12:00 PM", "12:00", "12:00:00")
-      const dateFromTime = new Date('1970-01-01 ' + timeInput);
-      if (!isNaN(dateFromTime.getTime())) {
-          return Utilities.formatDate(dateFromTime, timeZone, "HH:mm:ss");
-      }
-    }
-    
-    // Check if it's a full Date object (e.g., from a formatted cell)
+    // 2. Handle Date Objects (Google Sheets auto-parsed)
     if (timeInput instanceof Date) {
       return Utilities.formatDate(timeInput, timeZone, "HH:mm:ss");
+    }
+
+    // 3. Handle Strings
+    if (typeof timeInput === 'string') {
+      const clean = timeInput.trim();
+      if (!clean) return "";
+
+      // A. Check if it's a Full Date String first (e.g. "10/11/2025 12:00:00")
+      const dFull = new Date(clean);
+      if (!isNaN(dFull.getTime())) {
+         return Utilities.formatDate(dFull, timeZone, "HH:mm:ss");
+      }
+
+      // B. Fallback: Try prepending a dummy date (for "12:00 PM" or "14:00")
+      const dTimeOnly = new Date('1970-01-01 ' + clean);
+      if (!isNaN(dTimeOnly.getTime())) {
+          return Utilities.formatDate(dTimeOnly, timeZone, "HH:mm:ss");
+      }
     }
     
     return ""; // Could not parse
   } catch(e) {
     Logger.log(`parseCsvTime Error for input "${timeInput}": ${e.message}`);
-    return ""; // Return empty on error
+    return ""; 
   }
 }
 
