@@ -1634,7 +1634,7 @@ function validateScheduleLock(userEmail, now) {
     }
 }
 
-// --- HELPER: End Shift Metrics (Fixed Allowances) ---
+
 function calculateEndShiftMetrics(sheet, row, userEmail, now) {
     // 1. Calculate Net Login Hours
     const loginTimeVal = sheet.getRange(row, 3).getValue();
@@ -1642,14 +1642,12 @@ function calculateEndShiftMetrics(sheet, row, userEmail, now) {
         const loginTime = new Date(loginTimeVal);
         const durationMs = now.getTime() - loginTime.getTime();
         const durationHours = durationMs / (1000 * 60 * 60);
-        sheet.getRange(row, 23).setValue(durationHours.toFixed(2)); 
+        sheet.getRange(row, 23).setValue(durationHours.toFixed(2));
     }
 
     // 2. Get Schedule
     const schedule = getScheduleForDate(userEmail, now);
-    
     if (!schedule || !schedule.end) {
-        // Reset allowances to 0/No if no schedule
         sheet.getRange(row, 27).setValue("No");
         sheet.getRange(row, 28).setValue("No");
         return;
@@ -1669,19 +1667,24 @@ function calculateEndShiftMetrics(sheet, row, userEmail, now) {
         sheet.getRange(row, 13).setValue(Math.abs(diffSec));
     }
     
-    // --- ALLOWANCE LOGIC (FIXED) ---
-    // Rule: Eligible if SCHEDULED shift ends >= 21:00 (9 PM) OR < 05:00 (5 AM)
+    // --- UPDATED ALLOWANCE LOGIC ---
+    
+    // 1. Transportation: User said "eligible if present anyways".
+    // Since this function runs on Logout, they are present.
+    sheet.getRange(row, 28).setValue("Yes"); // TransportEligible (Col AB)
+
+    // 2. Overnight: "If shift ends after 9pm AND agent punched logout after that"
     const schedHour = schedEnd.getHours();
+    const actualHour = actualOut.getHours();
     
-    const isNightShift = (schedHour >= 21) || (schedHour < 5);
-    
-    // Write "Yes" or "No" to ensure consistency
-    if (isNightShift) {
-        sheet.getRange(row, 27).setValue("Yes"); // Overnight Eligible
-        sheet.getRange(row, 28).setValue("Yes"); // Transport Eligible
+    // Defined as >= 21:00 (9 PM) OR < 05:00 (5 AM)
+    const isShiftLate = (schedHour >= 21) || (schedHour < 5);
+    const isLogoutLate = (actualHour >= 21) || (actualHour < 8); // Wide buffer for early morning logout
+
+    if (isShiftLate && isLogoutLate) {
+        sheet.getRange(row, 27).setValue("Yes"); // OvernightEligible (Col AA)
     } else {
         sheet.getRange(row, 27).setValue("No");
-        sheet.getRange(row, 28).setValue("No");
     }
 }
 
@@ -2266,6 +2269,7 @@ function timeDiffInSeconds(start, end) {
 
 
 // ================= DAILY AUTO-LOG FUNCTION (WITH RED FLAG FOR GUESSED NAMES) =================
+// [code.gs] REPLACE THE EXISTING dailyLeaveSweeper FUNCTION
 function dailyLeaveSweeper() {
   const ss = getSpreadsheet();
   const scheduleSheet = getOrCreateSheet(ss, SHEET_NAMES.schedule);
@@ -2284,11 +2288,10 @@ function dailyLeaveSweeper() {
   const adherenceData = adherenceSheet.getDataRange().getValues();
   const punchedMap = new Set();
   
-  // 1. Build map of existing punches (Key: Email + Date)
+  // 1. Build map of existing punches
   for (let i = 1; i < adherenceData.length; i++) {
     const rowDate = parseDate(adherenceData[i][0]);
     const name = adherenceData[i][1];
-    
     if (rowDate && name) {
       const email = userData.nameToEmail[name];
       if (email) {
@@ -2312,84 +2315,101 @@ function dailyLeaveSweeper() {
 
     const schDate = parseDate(schDateRaw);
     if (!schDate) continue;
-    
-    // Only look at past dates
     if (schDate < startDate || schDate > endDate) continue;
     
     const dateKey = `${schEmail}|${Utilities.formatDate(schDate, timeZone, "yyyy-MM-dd")}`;
-
-    if (punchedMap.has(dateKey)) continue;
+    if (punchedMap.has(dateKey)) continue; // They punched (late or on time), so skip
 
     // --- LOGIC ---
     let finalStatus = "Absent";
     let isAbsentFlag = "No";
+    let autoNotes = "Auto-Log";
+    
+    // Get Role
+    const userRole = userData.emailToRole[schEmail] || 'agent';
 
-    if (schLeaveType.toLowerCase() === 'day off') continue; 
+    if (schLeaveType.toLowerCase() === 'day off') continue;
 
+    // Standard Logic
     if (['present', 'triple paid', 'work day off'].includes(schLeaveType.toLowerCase())) {
-        finalStatus = "Absent";
-        isAbsentFlag = "Yes"; 
+        
+        // --- NEW: MANAGEMENT AUTO-PRESENT LOGIC ---
+        if (userRole !== 'agent') {
+            finalStatus = schLeaveType; // Keep them Present/Work Day Off
+            isAbsentFlag = "No";
+            autoNotes = "Auto-Present (Mgmt Role)";
+        } else {
+            finalStatus = "Absent";
+            isAbsentFlag = "Yes"; 
+        }
+
     } else {
         finalStatus = schLeaveType;
-        isAbsentFlag = "No"; 
+        isAbsentFlag = "No";
     }
 
     // --- SMART NAME RESOLUTION ---
     const userObj = userData.userList.find(u => u.email === schEmail);
-    const scheduleName = scheduleData[i][0]; // Col A from Schedule
-    
+    const scheduleName = scheduleData[i][0]; 
     let officialName = "";
-    let isNameGuessed = false; // Flag to track if we guessed
+    let isNameGuessed = false; 
 
-    // Priority 1: Use Database Name (Most Accurate)
     if (userObj && userObj.name) {
         officialName = userObj.name;
-    } 
-    // Priority 2: Use Schedule Name (if valid)
-    else if (scheduleName && !String(scheduleName).includes('@')) {
+    } else if (scheduleName && !String(scheduleName).includes('@')) {
         officialName = scheduleName;
-    }
-    // Priority 3: Extract Name from Email (Fallback)
-    else {
-        isNameGuessed = true; // Mark as guessed
-        const namePart = schEmail.split('@')[0]; 
+    } else {
+        isNameGuessed = true; 
+        const namePart = schEmail.split('@')[0];
         if (namePart) {
-            officialName = namePart
-                .replace(/[._]/g, ' ')
-                .replace(/\b\w/g, c => c.toUpperCase());
+            officialName = namePart.replace(/[._]/g, ' ').replace(/\b\w/g, c => c.toUpperCase());
         } else {
-            officialName = schEmail; 
+            officialName = schEmail;
         }
     }
-    // ----------------------------------
-    
+
     const row = adherenceSheet.getLastRow() + 1;
     adherenceSheet.getRange(row, 1).setValue(schDate);        
     
-    // Set Name and Color if Guessed
     const nameCell = adherenceSheet.getRange(row, 2);
     nameCell.setValue(officialName);
-    
     if (isNameGuessed) {
-        nameCell.setBackground("#F4C7C3"); // Light Red Background
+        nameCell.setBackground("#F4C7C3");
         nameCell.setNote("⚠️ Name auto-generated from email. User not found in Database.");
     } else {
-        nameCell.setBackground(null); // Clear background if normal
+        nameCell.setBackground(null);
     }
 
     adherenceSheet.getRange(row, 14).setValue(finalStatus);   
     adherenceSheet.getRange(row, 20).setValue(isAbsentFlag);
+    
+    // If Auto-Present, Calculate Scheduled Hours so Payroll sees valid hours
+    if (userRole !== 'agent' && isAbsentFlag === "No") {
+         // Get Scheduled Duration
+         const sStart = scheduleData[i][2]; // Col C
+         const sEnd = scheduleData[i][4];   // Col E
+         let hours = 0;
+         if (sStart && sEnd) {
+             const d1 = createDateTime(schDate, parseCsvTime(sStart, timeZone));
+             const d2 = createDateTime(schDate, parseCsvTime(sEnd, timeZone));
+             if (d2 < d1) d2.setDate(d2.getDate() + 1); // Overnight
+             hours = (d2 - d1) / (1000 * 60 * 60);
+         }
+         // Set NetLoginHours (Col 23 / Index 23)
+         if (hours > 0) adherenceSheet.getRange(row, 23).setValue(hours.toFixed(2));
+    }
+    
+    // Reset allowances for absent agents
     adherenceSheet.getRange(row, 27).setValue("No");
-    adherenceSheet.getRange(row, 28).setValue("No"); 
-
+    adherenceSheet.getRange(row, 28).setValue("No");
+    
     punchedMap.add(dateKey); 
-    logsSheet.appendRow([new Date(), "System Sweeper", schEmail, "Auto-Log", `Marked as ${finalStatus}`]);
+    logsSheet.appendRow([new Date(), "System Sweeper", schEmail, autoNotes, `Marked as ${finalStatus}`]);
     updates++;
   }
   
   Logger.log(`Sweeper completed. ${updates} records added.`);
 }
-
 // ================= LEAVE REQUEST FUNCTIONS =================
 
 // (Helper - No Change)
