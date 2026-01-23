@@ -7546,15 +7546,19 @@ function debugPayrollFullScan() {
   Logger.log("=== END SCAN ===");
 }
 
-// [code.gs] ADD THIS NEW FUNCTION
 /**
  * Scans for users logged in > 12 hours and forces Logout.
- * Run this on an Hourly Trigger.
+ * UPDATED: Now calculates Transportation & Overnight eligibility.
  */
 function autoSystemLogout() {
   const ss = getSpreadsheet();
   const sheet = getOrCreateSheet(ss, SHEET_NAMES.adherence);
   const logsSheet = getOrCreateSheet(ss, SHEET_NAMES.logs);
+  const dbSheet = getOrCreateSheet(ss, SHEET_NAMES.database); // Needed for email lookup
+  
+  // 1. Load User Data to map Names -> Emails (Required for Schedule lookup)
+  const userData = getUserDataFromDb(dbSheet);
+  
   const data = sheet.getDataRange().getValues();
   const now = new Date();
   const MAX_HOURS = 12;
@@ -7564,6 +7568,7 @@ function autoSystemLogout() {
     // Index 2 = Login Time, Index 9 = Logout Time
     const loginVal = data[i][2];
     const logoutVal = data[i][9];
+    const userName = data[i][1];
     
     // Check if Logged In (Login exists, Logout empty)
     if (loginVal && !logoutVal) {
@@ -7572,21 +7577,30 @@ function autoSystemLogout() {
       const durationHours = durationMs / (1000 * 60 * 60);
 
       if (durationHours >= MAX_HOURS) {
-         const userName = data[i][1];
-         // Force Logout
-         sheet.getRange(i + 1, 10).setValue(now); // Set Logout Time
+         // Force Logout Time
+         sheet.getRange(i + 1, 10).setValue(now); 
          
-         // Update Status Cols (Y and Z)
-         sheet.getRange(i + 1, 25).setValue("Logout");
-         sheet.getRange(i + 1, 26).setValue(now);
+         // Update Status Cols
+         sheet.getRange(i + 1, 25).setValue("Logout"); // Col Y
+         sheet.getRange(i + 1, 26).setValue(now);      // Col Z
          
-         // Add Note
-         const noteCell = sheet.getRange(i + 1, 15); // Admin Audit
-         noteCell.setValue("System Auto-Logout (12h Exceeded)");
+         // Add Admin Note
+         sheet.getRange(i + 1, 15).setValue("System Auto-Logout (12h Exceeded)");
 
-         // Run calculation logic (reuse existing logic extract if possible, or simple calc)
-         const durationNet = (now - loginTime) / (1000 * 60 * 60);
-         sheet.getRange(i + 1, 23).setValue(durationNet.toFixed(2)); // Net Login Hours
+         // --- NEW LOGIC START ---
+         // Resolve Email to get Schedule for Overnight/OT calculation
+         const userEmail = userData.nameToEmail[userName];
+         
+         if (userEmail) {
+             // Run the standard Logout Logic (Calculates Net Hours, Transport, Overnight, OT)
+             calculateEndShiftMetrics(sheet, i + 1, userEmail, now);
+         } else {
+             // Fallback if email not found: Manually set simple values
+             const durationNet = (now - loginTime) / (1000 * 60 * 60);
+             sheet.getRange(i + 1, 23).setValue(durationNet.toFixed(2)); 
+             sheet.getRange(i + 1, 28).setValue("Yes"); // Default Transport to Yes if present
+         }
+         // --- NEW LOGIC END ---
 
          logsSheet.appendRow([now, "System Auto-Logout", userName, "Logout", "Exceeded 12h Limit"]);
          updates.push(userName);
@@ -7597,4 +7611,45 @@ function autoSystemLogout() {
   if (updates.length > 0) {
     Logger.log(`Auto-logged out ${updates.length} users: ${updates.join(", ")}`);
   }
+}
+
+/**
+ * ONE-TIME FIXER: Sweeps past entries to fill missing Transport/Overnight eligibility.
+ * Run this manually once.
+ */
+function fixPastEligibility() {
+  const ss = getSpreadsheet();
+  const sheet = getOrCreateSheet(ss, SHEET_NAMES.adherence);
+  const dbSheet = getOrCreateSheet(ss, SHEET_NAMES.database);
+  const userData = getUserDataFromDb(dbSheet);
+  
+  const data = sheet.getDataRange().getValues();
+  let updates = 0;
+
+  Logger.log("Starting Eligibility Sweep...");
+
+  for (let i = 1; i < data.length; i++) {
+    const logoutVal = data[i][9]; // Col J: Logout Time
+    // Col AA (Index 26) = Overnight, Col AB (Index 27) = Transport
+    const overnightVal = data[i][26];
+    const transportVal = data[i][27];
+
+    // Identify rows that are finished (Logged Out) but missing data
+    if (logoutVal && (overnightVal === "" || transportVal === "")) {
+        const userName = data[i][1];
+        const userEmail = userData.nameToEmail[userName];
+        
+        // We use the ACTUAL recorded logout time, not "now"
+        const actualLogoutTime = new Date(logoutVal);
+
+        if (userEmail && !isNaN(actualLogoutTime.getTime())) {
+            // Re-run metrics for this specific row
+            calculateEndShiftMetrics(sheet, i + 1, userEmail, actualLogoutTime);
+            updates++;
+        }
+    }
+  }
+  
+  Logger.log(`Sweep Complete. Backfilled eligibility for ${updates} rows.`);
+  return `Fixed ${updates} rows.`;
 }
