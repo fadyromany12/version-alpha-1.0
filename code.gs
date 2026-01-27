@@ -1375,18 +1375,31 @@ function punch(action, targetUserName, puncherEmail, adminTimestamp) {
   const userName = targetUserName; 
   const userEmail = userData.nameToEmail[userName];
 
-  // 1. Validation: User Existence & Permission
+  // 1. Validation
   if (!puncherIsAdmin && puncherEmail !== userEmail) { 
     throw new Error("Permission denied. You can only submit punches for yourself.");
   }
   if (!userEmail) throw new Error(`User "${userName}" not found in Data Base.`);
 
-  // 2. Setup Time & Date Context
+  // 2. Setup Time & Context
   const nowTimestamp = adminTimestamp ? new Date(adminTimestamp) : new Date();
-  const shiftDate = getShiftDate(new Date(nowTimestamp), SHIFT_CUTOFF_HOUR);
+  
+  // --- CRITICAL FIX START: SMART DATE DETECTION ---
+  // Instead of blindly using cutoff, we determine date based on Schedule Proximity
+  let shiftDate;
+  
+  if (action === "Login") {
+    // For Login, check if "Today" is the correct schedule match
+    shiftDate = determineSmartShiftDate(userEmail, nowTimestamp, SHIFT_CUTOFF_HOUR);
+  } else {
+    // For Logout/Breaks, we must find the OPEN row (Yesterday or Today)
+    shiftDate = determineOpenSessionDate(adherenceSheet, userName, nowTimestamp, SHIFT_CUTOFF_HOUR);
+  }
+  // --- CRITICAL FIX END ---
+
   const formattedDate = Utilities.formatDate(shiftDate, timeZone, "MM/dd/yyyy");
 
-  // 3. Get Current State (Critical for Logic)
+  // 3. Get Current State
   const row = findOrCreateRow(adherenceSheet, userName, shiftDate, formattedDate);
   // Fetch current state from Column Y (25) - LastAction
   const lastAction = adherenceSheet.getRange(row, 25).getValue() || "Logged Out";
@@ -1821,10 +1834,12 @@ function updateOrAddSingleSchedule(
 // ================= HELPER FUNCTIONS =================
 
 function getShiftDate(dateObj, cutoffHour) {
-  if (dateObj.getHours() < cutoffHour) {
-    dateObj.setDate(dateObj.getDate() - 1);
+  const newDate = new Date(dateObj); // CLONE the date to prevent side effects
+  if (newDate.getHours() < cutoffHour) {
+    newDate.setDate(newDate.getDate() - 1);
   }
-  return dateObj;
+  newDate.setHours(0,0,0,0); // Normalize to midnight
+  return newDate;
 }
 
 function createDateTime(dateObj, timeStr) {
@@ -7652,4 +7667,102 @@ function fixPastEligibility() {
   
   Logger.log(`Sweep Complete. Backfilled eligibility for ${updates} rows.`);
   return `Fixed ${updates} rows.`;
+}
+
+/**
+ * NEW: Determines if a login belongs to Today or Yesterday based on Schedule.
+ * Solves the 00:30 AM issue.
+ */
+function determineSmartShiftDate(userEmail, now, cutoffHour) {
+  const timeZone = Session.getScriptTimeZone();
+  
+  // 1. Define "Calendar Today" and "Calendar Yesterday"
+  const today = new Date(now);
+  today.setHours(0,0,0,0);
+  
+  const yesterday = new Date(now);
+  yesterday.setDate(yesterday.getDate() - 1);
+  yesterday.setHours(0,0,0,0);
+
+  // 2. Get Schedules for both days
+  const schedToday = getScheduleForDate(userEmail, today);
+  const schedYesterday = getScheduleForDate(userEmail, yesterday);
+
+  // 3. Calculate "Distance" to Start Times
+  let distToToday = 99999999;
+  let distToYesterday = 99999999;
+
+  if (schedToday && schedToday.start) {
+    const startToday = parseCsvTimeAsDate(schedToday.start, today); 
+    distToToday = Math.abs(now.getTime() - startToday.getTime());
+  }
+
+  if (schedYesterday && schedYesterday.start) {
+    const startYesterday = parseCsvTimeAsDate(schedYesterday.start, yesterday);
+    distToYesterday = Math.abs(now.getTime() - startYesterday.getTime());
+  }
+
+  // 4. Decision Logic
+  // If Today's schedule is closer to NOW than Yesterday's schedule, use Today.
+  // Example: Now=00:30. SchedToday=00:30 (Diff=0). SchedYest=22:00 (Diff=2.5h). -> Use Today.
+  if (distToToday < distToYesterday && distToToday < (12 * 60 * 60 * 1000)) { // Within 12 hours
+     return today;
+  }
+  
+  // Fallback: If no schedule match, use the standard Cutoff Logic
+  return getShiftDate(new Date(now), cutoffHour);
+}
+
+/**
+ * NEW: For Logout/Break, find where the user is ALREADY logged in.
+ */
+function determineOpenSessionDate(sheet, userName, now, cutoffHour) {
+  const timeZone = Session.getScriptTimeZone();
+  const today = new Date(now);
+  
+  // Check Today's Row first
+  const todayStr = Utilities.formatDate(today, timeZone, "MM/dd/yyyy");
+  const rowToday = findRowByDateName(sheet, userName, todayStr);
+  
+  if (rowToday > -1) {
+     const status = sheet.getRange(rowToday, 25).getValue(); // LastAction
+     if (status && status !== 'Logout') return today; // User is active today
+  }
+
+  // Check Yesterday (for overnight shifts)
+  const yesterday = new Date(now);
+  yesterday.setDate(yesterday.getDate() - 1);
+  const yestStr = Utilities.formatDate(yesterday, timeZone, "MM/dd/yyyy");
+  const rowYest = findRowByDateName(sheet, userName, yestStr);
+
+  if (rowYest > -1) {
+     const status = sheet.getRange(rowYest, 25).getValue();
+     if (status && status !== 'Logout') return yesterday; // User is still active from yesterday
+  }
+
+  // Default fallback
+  return getShiftDate(new Date(now), cutoffHour);
+}
+
+// Helper for finding row without creating it
+function findRowByDateName(sheet, userName, dateStr) {
+  const data = sheet.getDataRange().getValues();
+  for(let i=1; i<data.length; i++) {
+    // Col 0 is Date, Col 1 is Name
+    const d = data[i][0];
+    if (d instanceof Date) {
+       const dStr = Utilities.formatDate(d, Session.getScriptTimeZone(), "MM/dd/yyyy");
+       if (dStr === dateStr && data[i][1] === userName) return i + 1;
+    }
+  }
+  return -1;
+}
+
+// Helper to parse HH:mm:ss into a specific Date object
+function parseCsvTimeAsDate(timeStr, baseDate) {
+  if (!timeStr) return new Date(baseDate); // Fallback
+  const parts = timeStr.split(':');
+  const d = new Date(baseDate);
+  d.setHours(parts[0], parts[1], 0, 0);
+  return d;
 }
