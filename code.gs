@@ -2341,8 +2341,12 @@ function dailyLeaveSweeper() {
     const identifier = schEmail || schName.toLowerCase();
     const dateKey = `${identifier}|${Utilities.formatDate(schDate, timeZone, "yyyy-MM-dd")}`;
     
-    if (punchedMap.has(dateKey)) continue; // Already exists
-
+    // FIX: If the user has ANY punch in the Adherence sheet for this date, DO NOT mark them absent
+    if (punchedMap.has(dateKey)) {
+        Logger.log(`Skipping sweeper for ${identifier} - entry already exists.`);
+        continue; 
+    }
+    
     // --- LOGIC: Mark Absent/Auto-Present ---
     let finalStatus = "Absent";
     let isAbsentFlag = "Yes";
@@ -7866,6 +7870,23 @@ function saveAgentScheduleChanges(targetEmail, scheduleUpdates) {
 /* =========================================
    FEATURE: SHIFT SWAP MARKETPLACE
    ========================================= */
+   function getShiftSwaps() {
+  const ss = SpreadsheetApp.getActiveSpreadsheet();
+  const sheet = ss.getSheetByName("Shift_Swaps");
+  if (!sheet) return [];
+  
+  const data = sheet.getDataRange().getValues();
+  const headers = data.shift();
+  const userEmail = Session.getActiveUser().getEmail();
+  
+  // Filter for requests where user is Requester or Receiver
+  return data.filter(row => row[1] === userEmail || row[5] === userEmail)
+             .map(row => {
+               let obj = {};
+               headers.forEach((h, i) => obj[h] = row[i]);
+               return obj;
+             });
+}
 
 function getSwapData(userEmail) {
   const ss = getSpreadsheet();
