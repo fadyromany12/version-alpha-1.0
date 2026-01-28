@@ -2136,35 +2136,37 @@ body.dark-mode .status-offline { background-color: #374151; color: #9ca3af; }
         <hr class="section-divider">
 
 <div id="team-schedule-editor-section">
-  <h2>Team Schedule Editor (Date Range)</h2>
-  <div class="form-container">
-    <div class="form-row">
-      <div class="form-group">
-        <label>Select Agent</label>
-        <div id="sched-edit-email-container"></div> 
+    <h2>Team Schedule Editor (Date Range)</h2>
+    <div class="form-container">
+      <div class="form-row">
+        <div class="form-group">
+          <label>Select Agent</label>
+          <div id="sched-edit-email-container"></div> 
+        </div>
+        <div class="form-group"><label>From</label><input type="date" id="schedEditStart"></div>
+        <div class="form-group"><label>To</label><input type="date" id="schedEditEnd"></div>
       </div>
-      <div class="form-group"><label>From</label><input type="date" id="schedEditStart"></div>
-      <div class="form-group"><label>To</label><input type="date" id="schedEditEnd"></div>
+      <button type="button" class="btn-secondary" onclick="loadAgentSchedule()">Load Schedule</button>
     </div>
-    <button type="button" class="btn-secondary" onclick="loadAgentSchedule()">Load Schedule</button>
+    
+    <div id="schedEditorContainer" style="display:none; margin-top:20px;">
+      <table class="report-table">
+        <thead>
+          <tr>
+            <th>Date</th>
+            <th>Start Time</th>
+            <th>End Time</th>
+            <th>Leave Type</th>
+          </tr>
+        </thead>
+        <tbody id="schedEditorBody"></tbody>
+      </table>
+      <br>
+      <button type="button" class="btn-primary" onclick="saveScheduleChanges()">Save Changes</button>
+    </div>
   </div>
-  
-  <div id="schedEditorContainer" style="display:none; margin-top:20px;">
-    <table class="report-table">
-      <thead>
-        <tr>
-          <th>Date</th>
-          <th>Start Time</th>
-          <th>End Time</th>
-          <th>Leave Type</th>
-        </tr>
-      </thead>
-      <tbody id="schedEditorBody"></tbody>
-    </table>
-    <br>
-    <button type="button" class="btn-primary" onclick="saveScheduleChanges()">Save Changes</button>
-  </div>
-</div>
+
+</div> <div id="shift-swaps-panel" class="tab-panel">
 
 
 
@@ -8961,65 +8963,88 @@ function saveScheduleChanges() {
 // --- SHIFT SWAP LOGIC ---
 
 function loadSwapData() {
-    // Call this when opening the tab
-    const email = currentUserEmail; // Assuming you have this variable stored globally
+    // FIX: Get email from the hidden profile field instead of undefined 'currentUserEmail'
+    const email = document.getElementById('prof-email').value; 
+    
+    if (!email) {
+       // If profile hasn't loaded yet, retry in 500ms
+       setTimeout(loadSwapData, 500);
+       return;
+    }
+
     google.script.run.withSuccessHandler(renderSwapUI).getSwapData(email);
 }
 
 function renderSwapUI(data) {
     // 1. Market
     const marketBody = document.getElementById('swapMarketBody');
-    marketBody.innerHTML = "";
-    data.availableSwaps.forEach(s => {
-        marketBody.innerHTML += `
-            <tr>
-                <td>${s.reqName}</td>
-                <td>${s.reqDate}</td>
-                <td>${s.reqShift}</td>
-                <td><button onclick="promptAcceptSwap('${s.id}')">Swap</button></td>
-            </tr>`;
-    });
+    if(data.availableSwaps.length === 0) {
+        marketBody.innerHTML = '<p class="text-color-secondary">No swaps available.</p>';
+    } else {
+        let html = '';
+        data.availableSwaps.forEach(s => {
+            html += `<div class="request-list-item">
+                <div class="item-details">
+                    <h4>${s.reqName}</h4>
+                    <p><strong>Date:</strong> ${s.reqDate} | <strong>Shift:</strong> ${s.reqShift}</p>
+                </div>
+                <button class="submit-btn-green" onclick="promptAcceptSwap('${s.id}')">Swap</button>
+            </div>`;
+        });
+        marketBody.innerHTML = html;
+    }
 
     // 2. My Swaps
     const myBody = document.getElementById('mySwapsBody');
-    myBody.innerHTML = "";
-    data.myRequests.forEach(s => {
-        myBody.innerHTML += `
-            <tr>
-                <td>${s.id}</td>
-                <td>${s.reqDate}</td>
-                <td>${s.status}</td>
-                <td>${s.rtaStatus}</td>
-                <td>${s.mgrStatus}</td>
-            </tr>`;
-    });
+    if(data.myRequests.length === 0) {
+        myBody.innerHTML = '<p class="text-color-secondary">No active requests.</p>';
+    } else {
+        let html = '';
+        data.myRequests.forEach(s => {
+            html += `<div class="request-list-item">
+                <div class="item-details">
+                    <p><strong>Date:</strong> ${s.reqDate}</p>
+                    <p>Status: <span class="status-badge status-pending">${s.status}</span></p>
+                    <small>RTA: ${s.rtaStatus} | Mgr: ${s.mgrStatus}</small>
+                </div>
+            </div>`;
+        });
+        myBody.innerHTML = html;
+    }
 
     // 3. Approvals
     const appBody = document.getElementById('swapApprovalsBody');
-    appBody.innerHTML = "";
     document.getElementById('swapApproveBtn').innerText = `Approvals (${data.pendingApprovals.length})`;
     
-    data.pendingApprovals.forEach(s => {
-        appBody.innerHTML += `
-            <tr>
-                <td>${s.reqName}</td>
-                <td>${s.reqDate}</td>
-                <td>${s.recName} (${s.recDate})</td>
-                <td>${s.type}</td>
-                <td>
-                    <button onclick="processSwap('${s.id}', 'Approve', '${s.type}')">Approve</button>
-                    <button onclick="processSwap('${s.id}', 'Deny', '${s.type}')" style="background:red">Deny</button>
-                </td>
-            </tr>`;
-    });
+    if(data.pendingApprovals.length === 0) {
+        appBody.innerHTML = '<p class="text-color-secondary">No pending approvals.</p>';
+    } else {
+        let html = '';
+        data.pendingApprovals.forEach(s => {
+            html += `<div class="request-list-item">
+                <div class="item-details">
+                    <h4>${s.reqName} ⇄ ${s.recName}</h4>
+                    <p>${s.reqDate} (${s.reqShift}) ⇄ ${s.recDate} (${s.recShift})</p>
+                    <p class="text-color-secondary">Approval Type: ${s.type}</p>
+                </div>
+                <div class="item-actions">
+                    <button class="approve-btn" onclick="processSwap('${s.id}', 'Approve', '${s.type}')">Approve</button>
+                    <button class="deny-btn" onclick="processSwap('${s.id}', 'Deny', '${s.type}')">Deny</button>
+                </div>
+            </div>`;
+        });
+        appBody.innerHTML = html;
+    }
 }
 
 function postSwapRequest() {
     const date = document.getElementById('swapPostDate').value;
     const shift = document.getElementById('swapPostShift').value;
-    const email = currentUserEmail;
-    
-    if(!date) return alert("Select date");
+    // FIX: Get actual email
+    const email = document.getElementById('prof-email').value;
+
+    if(!date || !shift) return alert("Fill date and shift");
+    if(!email) return alert("User email not loaded. Please refresh.");
     
     google.script.run.withSuccessHandler(() => {
         alert("Posted!");
@@ -9028,26 +9053,37 @@ function postSwapRequest() {
 }
 
 function promptAcceptSwap(swapId) {
+    // FIX: Get actual email
+    const email = document.getElementById('prof-email').value;
     const myDate = prompt("Enter YOUR date to trade (YYYY-MM-DD):");
-    const myShift = prompt("Enter YOUR shift time (e.g. 12:00-21:00):");
+    const myShift = prompt("Enter YOUR shift time (e.g. 12:00 - 21:00):");
     
     if(myDate && myShift) {
-        google.script.run.withSuccessHandler(alert).acceptSwapOffer(currentUserEmail, swapId, myDate, myShift);
+        google.script.run.withSuccessHandler(alert).acceptSwapOffer(email, swapId, myDate, myShift);
     }
 }
 
 function processSwap(id, action, typeLabel) {
+    // FIX: Get actual email
+    const email = document.getElementById('prof-email').value;
     const role = (typeLabel.includes("RTA")) ? 'rta' : 'manager';
     google.script.run.withSuccessHandler(() => {
         alert("Processed!");
         loadSwapData();
-    }).processSwapApproval(currentUserEmail, id, action, role);
+    }).processSwapApproval(email, id, action, role);
 }
 
 function switchSwapTab(tabName) {
-    document.querySelectorAll('.swap-view').forEach(el => el.classList.add('hidden'));
-    document.getElementById('swap-' + tabName).classList.remove('hidden');
-    loadSwapData(); // Refresh data on tab switch
+    document.querySelectorAll('.swap-view').forEach(el => el.style.display = 'none');
+    document.getElementById('swap-' + tabName).style.display = 'block';
+    
+    // Toggle active button style
+    document.querySelectorAll('#shift-swaps-panel .btn-secondary').forEach(b => b.classList.remove('active'));
+    // (Optional: add logic to highlight active button)
+    
+    if(tabName === 'market' || tabName === 'mySwaps' || tabName === 'approvals') {
+        loadSwapData();
+    }
 }
 
         // -----------------------------
