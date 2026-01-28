@@ -1657,6 +1657,10 @@ body.dark-mode .status-offline { background-color: #374151; color: #9ca3af; }
             <svg class="nav-icon" xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="none" stroke="currentColor"><rect x="3" y="4" width="18" height="18" rx="2" ry="2"></rect><line x1="16" y1="2" x2="16" y2="6"></line><line x1="8" y1="2" x2="8" y2="6"></line><line x1="3" y1="10" x2="21" y2="10"></line></svg>
             <span class="nav-button-text">My Schedule</span>
           </button>
+          <button id="shift-swaps-tab-button" class="tab-button" onclick="showTab('shift-swaps')">
+            <span class="nav-icon">⇄</span>
+            <span class="nav-button-text">Shift Swaps</span>
+          </button>
           <button id="leave-request-tab-button" class="tab-button" onclick="showTab('leave-request')">
             <svg class="nav-icon" xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="none" stroke="currentColor"><path d="M8 2v4"></path><path d="M16 2v4"></path><rect x="3" y="4" width="18" height="18" rx="2"></rect><path d="M3 10h18"></path><path d="M8 14h.01"></path><path d="M12 14h.01"></path><path d="M16 14h.01"></path><path d="M8 18h.01"></path><path d="M12 18h.01"></path><path d="M16 18h.01"></path></svg>
             <span class="nav-button-text">My Leave</span>
@@ -2127,7 +2131,80 @@ body.dark-mode .status-offline { background-color: #374151; color: #9ca3af; }
             <button type="button" class="btn-primary" onclick="submitSchedule()">Submit Schedule(s)</button>
           </form>
           <div id="schedule-status" class="status-message"></div>
-        </div>
+        
+
+        <hr class="section-divider">
+
+<div id="team-schedule-editor-section">
+  <h2>Team Schedule Editor (Date Range)</h2>
+  <div class="form-container">
+    <div class="form-row">
+      <div class="form-group">
+        <label>Select Agent</label>
+        <div id="sched-edit-email-container"></div> 
+      </div>
+      <div class="form-group"><label>From</label><input type="date" id="schedEditStart"></div>
+      <div class="form-group"><label>To</label><input type="date" id="schedEditEnd"></div>
+    </div>
+    <button type="button" class="btn-secondary" onclick="loadAgentSchedule()">Load Schedule</button>
+  </div>
+  
+  <div id="schedEditorContainer" style="display:none; margin-top:20px;">
+    <table class="report-table">
+      <thead>
+        <tr>
+          <th>Date</th>
+          <th>Start Time</th>
+          <th>End Time</th>
+          <th>Leave Type</th>
+        </tr>
+      </thead>
+      <tbody id="schedEditorBody"></tbody>
+    </table>
+    <br>
+    <button type="button" class="btn-primary" onclick="saveScheduleChanges()">Save Changes</button>
+  </div>
+</div>
+
+
+
+        <!-- ================================== -->
+        <!--   TAB 5.1: SHIFT SWAP PANEL     -->
+        <!-- ================================== -->
+
+
+<div id="shift-swaps-panel" class="tab-panel">
+  <h2>Shift Swap Marketplace</h2>
+  
+  <div class="button-group">
+      <button class="btn-secondary active" onclick="switchSwapTab('market')">Marketplace</button>
+      <button class="btn-secondary" onclick="switchSwapTab('mySwaps')">My Requests</button>
+      <button class="btn-secondary" onclick="switchSwapTab('approvals')" id="swapApproveBtn">Approvals</button>
+  </div>
+  
+  <div id="swap-market" class="swap-view" style="margin-top:20px;">
+      <div class="form-container" style="margin-bottom: 20px;">
+          <h3>Post a Request</h3>
+          <div class="form-row">
+              <div class="form-group"><label>Date to Swap</label><input type="date" id="swapPostDate"></div>
+              <div class="form-group"><label>Current Shift Time</label><input type="text" id="swapPostShift" placeholder="e.g. 09:00 - 18:00"></div>
+          </div>
+          <button class="btn-primary" onclick="postSwapRequest()">Post to Market</button>
+      </div>
+      <h3>Available Swaps</h3>
+      <div id="swapMarketBody" class="request-list">Loading...</div>
+  </div>
+
+  <div id="swap-mySwaps" class="swap-view" style="display:none; margin-top:20px;">
+      <h3>My Swap History</h3>
+      <div id="mySwapsBody" class="request-list">Loading...</div>
+  </div>
+
+  <div id="swap-approvals" class="swap-view" style="display:none; margin-top:20px;">
+      <h3>Pending Approvals</h3>
+      <div id="swapApprovalsBody" class="request-list">Loading...</div>
+  </div>
+</div>
         
         <!-- ================================== -->
         <!--   TAB 6: LEAVE APPROVALS PANEL     -->
@@ -2686,7 +2763,7 @@ body.dark-mode .status-offline { background-color: #374151; color: #9ca3af; }
 </div>
 
         <!-- ================================== -->
-        <!--  TAB 16: Finance ADMIN PANEL -->
+        <!--  TAB 16:  ADMIN PANEL -->
         <!-- ================================== -->
 
 <div id="hr-admin-panel" class="tab-panel">
@@ -3163,6 +3240,11 @@ function showTab(tabName) {
     
     } else if (tabName === 'analytics') {
       loadAnalyticsTab();
+    } else if (tabName === 'schedule') {
+      // Populate the NEW editor dropdown
+      populateAdminDropdown(allUsersList, selfUserName, 'sched-edit-email', 'Select Agent');
+    } else if (tabName === 'shift-swaps') {
+      loadSwapData();
     }
   }
 
@@ -8822,6 +8904,152 @@ function renderLeaderboard(data) {
                 refreshCurrentData();
             }
         }, 600000);
+
+        // --- SCHEDULE EDITOR LOGIC ---
+
+function loadAgentSchedule() {
+    const email = document.getElementById('schedEditEmail').value;
+    const start = document.getElementById('schedEditStart').value;
+    const end = document.getElementById('schedEditEnd').value;
+
+    if(!email || !start || !end) return alert("Please fill all fields");
+
+    google.script.run.withSuccessHandler(renderScheduleEditor).getAgentScheduleForEditor(email, start, end);
+}
+
+function renderScheduleEditor(data) {
+    const tbody = document.getElementById('schedEditorBody');
+    tbody.innerHTML = "";
+    document.getElementById('schedEditorContainer').classList.remove('hidden');
+
+    data.forEach(row => {
+        const tr = document.createElement('tr');
+        tr.innerHTML = `
+            <td>${row.date} <input type="hidden" class="sch-date" value="${row.date}"></td>
+            <td><input type="time" class="sch-start" value="${row.startTime}"></td>
+            <td><input type="time" class="sch-end" value="${row.endTime}"></td>
+            <td>
+                <select class="sch-type">
+                    <option value="Present" ${row.leaveType === 'Present' ? 'selected' : ''}>Present</option>
+                    <option value="OFF" ${row.leaveType === 'OFF' ? 'selected' : ''}>OFF</option>
+                    <option value="Sick" ${row.leaveType === 'Sick' ? 'selected' : ''}>Sick</option>
+                    <option value="Annual" ${row.leaveType === 'Annual' ? 'selected' : ''}>Annual</option>
+                </select>
+            </td>
+        `;
+        tbody.appendChild(tr);
+    });
+}
+
+function saveScheduleChanges() {
+    const email = document.getElementById('schedEditEmail').value;
+    const rows = document.querySelectorAll('#schedEditorBody tr');
+    const updates = [];
+
+    rows.forEach(tr => {
+        updates.push({
+            date: tr.querySelector('.sch-date').value,
+            startTime: tr.querySelector('.sch-start').value,
+            endTime: tr.querySelector('.sch-end').value,
+            leaveType: tr.querySelector('.sch-type').value
+        });
+    });
+
+    google.script.run.withSuccessHandler(alert).saveAgentScheduleChanges(email, updates);
+}
+
+// --- SHIFT SWAP LOGIC ---
+
+function loadSwapData() {
+    // Call this when opening the tab
+    const email = currentUserEmail; // Assuming you have this variable stored globally
+    google.script.run.withSuccessHandler(renderSwapUI).getSwapData(email);
+}
+
+function renderSwapUI(data) {
+    // 1. Market
+    const marketBody = document.getElementById('swapMarketBody');
+    marketBody.innerHTML = "";
+    data.availableSwaps.forEach(s => {
+        marketBody.innerHTML += `
+            <tr>
+                <td>${s.reqName}</td>
+                <td>${s.reqDate}</td>
+                <td>${s.reqShift}</td>
+                <td><button onclick="promptAcceptSwap('${s.id}')">Swap</button></td>
+            </tr>`;
+    });
+
+    // 2. My Swaps
+    const myBody = document.getElementById('mySwapsBody');
+    myBody.innerHTML = "";
+    data.myRequests.forEach(s => {
+        myBody.innerHTML += `
+            <tr>
+                <td>${s.id}</td>
+                <td>${s.reqDate}</td>
+                <td>${s.status}</td>
+                <td>${s.rtaStatus}</td>
+                <td>${s.mgrStatus}</td>
+            </tr>`;
+    });
+
+    // 3. Approvals
+    const appBody = document.getElementById('swapApprovalsBody');
+    appBody.innerHTML = "";
+    document.getElementById('swapApproveBtn').innerText = `Approvals (${data.pendingApprovals.length})`;
+    
+    data.pendingApprovals.forEach(s => {
+        appBody.innerHTML += `
+            <tr>
+                <td>${s.reqName}</td>
+                <td>${s.reqDate}</td>
+                <td>${s.recName} (${s.recDate})</td>
+                <td>${s.type}</td>
+                <td>
+                    <button onclick="processSwap('${s.id}', 'Approve', '${s.type}')">Approve</button>
+                    <button onclick="processSwap('${s.id}', 'Deny', '${s.type}')" style="background:red">Deny</button>
+                </td>
+            </tr>`;
+    });
+}
+
+function postSwapRequest() {
+    const date = document.getElementById('swapPostDate').value;
+    const shift = document.getElementById('swapPostShift').value;
+    const email = currentUserEmail;
+    
+    if(!date) return alert("Select date");
+    
+    google.script.run.withSuccessHandler(() => {
+        alert("Posted!");
+        loadSwapData();
+    }).postSwapRequest(email, date, shift);
+}
+
+function promptAcceptSwap(swapId) {
+    const myDate = prompt("Enter YOUR date to trade (YYYY-MM-DD):");
+    const myShift = prompt("Enter YOUR shift time (e.g. 12:00-21:00):");
+    
+    if(myDate && myShift) {
+        google.script.run.withSuccessHandler(alert).acceptSwapOffer(currentUserEmail, swapId, myDate, myShift);
+    }
+}
+
+function processSwap(id, action, typeLabel) {
+    const role = (typeLabel.includes("RTA")) ? 'rta' : 'manager';
+    google.script.run.withSuccessHandler(() => {
+        alert("Processed!");
+        loadSwapData();
+    }).processSwapApproval(currentUserEmail, id, action, role);
+}
+
+function switchSwapTab(tabName) {
+    document.querySelectorAll('.swap-view').forEach(el => el.classList.add('hidden'));
+    document.getElementById('swap-' + tabName).classList.remove('hidden');
+    loadSwapData(); // Refresh data on tab switch
+}
+
         // -----------------------------
 
         // Set default dates
