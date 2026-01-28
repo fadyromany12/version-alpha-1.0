@@ -1638,7 +1638,6 @@ body.dark-mode .status-offline { background-color: #374151; color: #9ca3af; }
     <!-- New Main App Layout Container -->
     <div class="app-container">
     
-      <!-- New Vertical Sidebar Navigation -->
       <nav id="app-sidebar">
         
         <div class="nav-group">
@@ -1669,7 +1668,6 @@ body.dark-mode .status-offline { background-color: #374151; color: #9ca3af; }
              <svg class="nav-icon" xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="none" stroke="currentColor"><path d="M15 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V7Z"></path><path d="M14 2v4a2 2 0 0 0 2 2h4"></path><path d="M10 9H8"></path><path d="M16 13H8"></path><path d="M16 17H8"></path></svg>
             <span class="nav-button-text">History Report</span>
           </button>
-          <!-- MODIFIED: Coaching tab moved here -->
           <button id="coaching-tab-button" class="tab-button" onclick="showTab('coaching')">
             <svg class="nav-icon" xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="none" stroke="currentColor"><path d="M12 22s8-4 8-10V5l-8-3-8 3v7c0 6 8 10 8 10z"></path></svg>
             <span class="nav-button-text">Coaching</span>
@@ -1705,8 +1703,6 @@ body.dark-mode .status-offline { background-color: #374151; color: #9ca3af; }
             <svg class="nav-icon" xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="none" stroke="currentColor"><path d="M16 21v-2a4 4 0 0 0-4-4H5a4 4 0 0 0-4 4v2"></path><circle cx="8.5" cy="7" r="4"></circle><polyline points="17 11 19 13 23 9"></polyline></svg>
             <span class="nav-button-text">Reporting Line</span>
           </button>
-        
-          <!-- MODIFIED: Coaching tab removed from here -->
         </div>
 
         <div class="nav-group">
@@ -1718,9 +1714,9 @@ body.dark-mode .status-offline { background-color: #374151; color: #9ca3af; }
           </button>
 
           <button id="analytics-tab-button" class="tab-button" onclick="showTab('analytics')">
-  <span class="nav-icon">📊</span>
-  <span class="nav-button-text">Analytics</span>
-</button>
+            <span class="nav-icon">📊</span>
+            <span class="nav-button-text">Analytics</span>
+          </button>
           <button id="schedule-tab-button" class="tab-button" onclick="showTab('schedule')">
             <svg class="nav-icon" xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="none" stroke="currentColor"><path d="M19 4H5a2 2 0 0 0-2 2v14a2 2 0 0 0 2 2h14a2 2 0 0 0 2-2V6a2 2 0 0 0-2-2z"></path><path d="M12 12h-4v4h4v-4z"></path><path d="M16 2v4"></path><path d="M8 2v4"></path><path d="M3 10h18"></path></svg>
             <span class="nav-button-text">Schedule Editor</span>
@@ -1757,259 +1753,238 @@ body.dark-mode .status-offline { background-color: #374151; color: #9ca3af; }
 
       </nav>
       
-      <!-- Main Content Area -->
-      <!-- All tab panels are moved inside here -->
       <main id="app-content">
 
-        <!--                           Rewards                                  -->
-
-        
-        <!-- ================================== -->
-        <!--      TAB 1: PUNCH PANEL            -->
-        <!-- ================================== -->
         <div id="punch-panel" class="tab-panel">
 
-  <div id="announcement-banner-container" style="display: none; margin-bottom: 20px;">
-    <div id="announcement-banner" class="status-message warning" style="visibility: visible; opacity: 1; text-align: left; padding-right: 35px; position: relative;">
-      <strong style="display: block; margin-bottom: 5px;">Announcements</strong>
-      <div id="announcement-content-area"></div>
-      <button onclick="dismissAnnouncements()" style="position: absolute; top: 10px; right: 10px; background: none; border: none; font-size: 1.5rem; color: var(--status-pending-text); cursor: pointer; padding: 0; margin: 0; line-height: 1;">&times;</button>
-    </div>
-  </div>
+          <div id="announcement-banner-container" style="display: none; margin-bottom: 20px;">
+            <div id="announcement-banner" class="status-message warning" style="visibility: visible; opacity: 1; text-align: left; padding-right: 35px; position: relative;">
+              <strong style="display: block; margin-bottom: 5px;">Announcements</strong>
+              <div id="announcement-content-area"></div>
+              <button onclick="dismissAnnouncements()" style="position: absolute; top: 10px; right: 10px; background: none; border: none; font-size: 1.5rem; color: var(--status-pending-text); cursor: pointer; padding: 0; margin: 0; line-height: 1;">&times;</button>
+            </div>
+          </div>
 
-  <div id="agent-info" class="info-card">Loading user info...</div> 
-  
-  <div id="admin-panel" class="info-card" style="display: none; text-align: left; overflow: visible;">
-    <div id="agent-select-container"></div>
-  </div>
+          <div id="agent-info" class="info-card">Loading user info...</div> 
+          
+          <div id="admin-panel" class="info-card" style="display: none; text-align: left; overflow: visible;">
+            <div id="agent-select-container"></div>
+          </div>
 
-  <div id="project-selector-container" class="info-card" style="text-align: left; margin-bottom: 20px; background-color: var(--input-bg);">
-    <label for="current-project-select" style="font-weight: 500; margin-right: 10px;">Select Project:</label>
-    <select id="current-project-select" style="max-width: 300px; padding: 8px;">
-      <option value="">-- Loading Projects... --</option>
-    </select>
-  </div>
+          <div id="project-selector-container" class="info-card" style="text-align: left; margin-bottom: 20px; background-color: var(--input-bg);">
+            <label for="current-project-select" style="font-weight: 500; margin-right: 10px;">Select Project:</label>
+            <select id="current-project-select" style="max-width: 300px; padding: 8px;">
+              <option value="">-- Loading Projects... --</option>
+            </select>
+          </div>
 
-  <div id="timers-grid" style="display:none; grid-template-columns: 1fr 1fr; gap: 15px; margin-bottom: 20px;">
-    
-    <div style="background: var(--card-bg); padding: 15px; border-radius: 8px; border: 1px solid var(--border-color); box-shadow: var(--shadow-sm); display: flex; align-items: center; gap: 12px;">
-      <div style="background: var(--konecta-blue); color: white; width: 40px; height: 40px; border-radius: 50%; display: flex; align-items: center; justify-content: center; font-size: 1.2rem;">⏱️</div>
-      <div>
-        <div style="font-size: 0.75rem; color: var(--text-color-secondary); text-transform: uppercase; font-weight: 600;">Total Shift Time</div>
-        <div id="shift-timer-value" style="font-size: 1.5rem; font-weight: 700; color: var(--text-color); font-variant-numeric: tabular-nums;">00:00:00</div>
-        <div style="font-size: 0.75rem; color: var(--text-color-secondary);">Login: <span id="shift-start-time">--:--</span></div>
-      </div>
-    </div>
+          <div id="timers-grid" style="display:none; grid-template-columns: 1fr 1fr; gap: 15px; margin-bottom: 20px;">
+            <div style="background: var(--card-bg); padding: 15px; border-radius: 8px; border: 1px solid var(--border-color); box-shadow: var(--shadow-sm); display: flex; align-items: center; gap: 12px;">
+              <div style="background: var(--konecta-blue); color: white; width: 40px; height: 40px; border-radius: 50%; display: flex; align-items: center; justify-content: center; font-size: 1.2rem;">⏱️</div>
+              <div>
+                <div style="font-size: 0.75rem; color: var(--text-color-secondary); text-transform: uppercase; font-weight: 600;">Total Shift Time</div>
+                <div id="shift-timer-value" style="font-size: 1.5rem; font-weight: 700; color: var(--text-color); font-variant-numeric: tabular-nums;">00:00:00</div>
+                <div style="font-size: 0.75rem; color: var(--text-color-secondary);">Login: <span id="shift-start-time">--:--</span></div>
+              </div>
+            </div>
 
-  <div style="background: var(--card-bg); padding: 15px; border-radius: 8px; border: 1px solid var(--border-color); box-shadow: var(--shadow-sm); display: flex; align-items: center; gap: 12px;">
-      <div id="status-icon-bg" style="background: #10b981; color: white; width: 40px; height: 40px; border-radius: 50%; display: flex; align-items: center; justify-content: center; font-size: 1.2rem;">⚡</div>
-      <div>
-        <div id="status-timer-label" style="font-size: 0.75rem; color: var(--text-color-secondary); text-transform: uppercase; font-weight: 600;">Current Activity</div>
-        <div id="status-timer-value" style="font-size: 1.5rem; font-weight: 700; color: var(--text-color); font-variant-numeric: tabular-nums;">00:00:00</div>
-        <div id="status-current-name" style="font-size: 0.85rem; font-weight: 500; color: var(--konecta-dark);">Logged Out</div>
-      </div>
-    </div>
+            <div style="background: var(--card-bg); padding: 15px; border-radius: 8px; border: 1px solid var(--border-color); box-shadow: var(--shadow-sm); display: flex; align-items: center; gap: 12px;">
+              <div id="status-icon-bg" style="background: #10b981; color: white; width: 40px; height: 40px; border-radius: 50%; display: flex; align-items: center; justify-content: center; font-size: 1.2rem;">⚡</div>
+              <div>
+                <div id="status-timer-label" style="font-size: 0.75rem; color: var(--text-color-secondary); text-transform: uppercase; font-weight: 600;">Current Activity</div>
+                <div id="status-timer-value" style="font-size: 1.5rem; font-weight: 700; color: var(--text-color); font-variant-numeric: tabular-nums;">00:00:00</div>
+                <div id="status-current-name" style="font-size: 0.85rem; font-weight: 500; color: var(--konecta-dark);">Logged Out</div>
+              </div>
+            </div>
+          </div>
 
-  </div><div class="info-card" id="gamification-card" style="margin-bottom: 20px; text-align: left; background: var(--card-bg);">
-  <div style="display: flex; align-items: flex-start; justify-content: space-between; margin-bottom: 15px;">
-    <div>
-      <h3 style="margin: 0; color: var(--konecta-dark); font-size: 1rem; display: flex; align-items: center; gap: 8px;">
-        🏆 My Rewards
-      </h3>
-      <div id="my-rank-badge" class="rank-badge rank-novice">🔰 Novice</div>
-    </div>
-    <button class="view-btn" onclick="openLeaderboard()" style="font-size: 0.8rem; padding: 4px 10px;">View Leaderboard</button>
-  </div>
-  
-  <div style="display: flex; align-items: center; gap: 15px;">
-    <div style="text-align: center; min-width: 60px;">
-      <div class="stat-value" id="my-level" style="font-size: 1.8rem; font-weight: 800; color: var(--text-color);">1</div>
-      <div class="stat-label" style="font-size: 0.7rem; color: var(--text-color-secondary); text-transform: uppercase;">Level</div>
-    </div>
-    
-    <div style="flex-grow: 1;">
-      <div style="display: flex; justify-content: space-between; font-size: 0.85rem; margin-bottom: 6px; font-weight: 500;">
-        <span id="my-points">0 XP</span>
-        <span id="xp-next" style="color: var(--text-color-secondary);">0 / 1000 to next</span>
-      </div>
-      <div style="background: #e5e7eb; border-radius: 10px; height: 10px; width: 100%; overflow: hidden;">
-         <div id="xp-bar" style="background: var(--konecta-blue); height: 100%; width: 0%; border-radius: 10px; transition: width 0.8s cubic-bezier(0.4, 0, 0.2, 1);"></div>
-      </div>
-    </div>
-  </div>
-</div>
+          <div class="info-card" id="gamification-card" style="margin-bottom: 20px; text-align: left; background: var(--card-bg);">
+            <div style="display: flex; align-items: flex-start; justify-content: space-between; margin-bottom: 15px;">
+              <div>
+                <h3 style="margin: 0; color: var(--konecta-dark); font-size: 1rem; display: flex; align-items: center; gap: 8px;">
+                  🏆 My Rewards
+                </h3>
+                <div id="my-rank-badge" class="rank-badge rank-novice">🔰 Novice</div>
+              </div>
+              <button class="view-btn" onclick="openLeaderboard()" style="font-size: 0.8rem; padding: 4px 10px;">View Leaderboard</button>
+            </div>
+            
+            <div style="display: flex; align-items: center; gap: 15px;">
+              <div style="text-align: center; min-width: 60px;">
+                <div class="stat-value" id="my-level" style="font-size: 1.8rem; font-weight: 800; color: var(--text-color);">1</div>
+                <div class="stat-label" style="font-size: 0.7rem; color: var(--text-color-secondary); text-transform: uppercase;">Level</div>
+              </div>
+              
+              <div style="flex-grow: 1;">
+                <div style="display: flex; justify-content: space-between; font-size: 0.85rem; margin-bottom: 6px; font-weight: 500;">
+                  <span id="my-points">0 XP</span>
+                  <span id="xp-next" style="color: var(--text-color-secondary);">0 / 1000 to next</span>
+                </div>
+                <div style="background: #e5e7eb; border-radius: 10px; height: 10px; width: 100%; overflow: hidden;">
+                   <div id="xp-bar" style="background: var(--konecta-blue); height: 100%; width: 0%; border-radius: 10px; transition: width 0.8s cubic-bezier(0.4, 0, 0.2, 1);"></div>
+                </div>
+              </div>
+            </div>
+          </div>
 
-  <div id="current-status-display" class="status-message" style="visibility: hidden; text-align: center; margin-top: 0; margin-bottom: 20px;"></div>
+          <div id="current-status-display" class="status-message" style="visibility: hidden; text-align: center; margin-top: 0; margin-bottom: 20px;"></div>
+          
+          <div id="status" class="status-message"></div>
+          
+          <div id="buttons">
+            <div class="button-group"><button class="btn-primary" onclick="punch('Login')">Login</button></div>
+            <div class="button-group">
+              <button class="btn-primary" onclick="punch('First Break In')">1st Break In</button>
+              <button class="btn-primary" onclick="punch('First Break Out')">1st Break Out</button>
+            </div>
+            <div class="button-group">
+              <button class="btn-primary" onclick="punch('Lunch In')">Lunch In</button>
+              <button class="btn-primary" onclick="punch('Lunch Out')">Lunch Out</button>
+            </div>
+            <div class="button-group">
+              <button class="btn-primary" onclick="punch('Last Break In')">Last Break In</button>
+              <button class="btn-primary" onclick="punch('Last Break Out')">Last Break Out</button>
+            </div>
+            <div class="button-group">
+              <button class="btn-primary" onclick="punch('Logout')">Logout</button>
+            </div>
+          </div>
 
-  
-  
-  <div id="status" class="status-message"></div>
-  
-  <div id="buttons">
-    <div class="button-group"><button class="btn-primary" onclick="punch('Login')">Login</button></div>
-    <div class="button-group">
-      <button class="btn-primary" onclick="punch('First Break In')">1st Break In</button>
-      <button class="btn-primary" onclick="punch('First Break Out')">1st Break Out</button>
-    </div>
-    <div class="button-group">
-      <button class="btn-primary" onclick="punch('Lunch In')">Lunch In</button>
-      <button class="btn-primary" onclick="punch('Lunch Out')">Lunch Out</button>
-    </div>
-    <div class="button-group">
-      <button class="btn-primary" onclick="punch('Last Break In')">Last Break In</button>
-      <button class="btn-primary" onclick="punch('Last Break Out')">Last Break Out</button>
-    </div>
-    <div class="button-group">
-      <button class="btn-primary" onclick="punch('Logout')">Logout</button>
-    </div>
-  </div>
+          <div id="other-buttons">
+             <div class="button-group">
+               <button onclick="punch('Coaching In')">Coaching In</button>
+               <button onclick="punch('Coaching Out')">Coaching Out</button>
+             </div>
+            <div class="button-group">
+              <button onclick="punch('Meeting In')">Meeting In</button>
+              <button onclick="punch('Meeting Out')">Meeting Out</button>
+            </div>
+             <div class="button-group">
+               <button onclick="punch('Personal In')">Personal In</button>
+               <button onclick="punch('Personal Out')">Personal Out</button>
+             </div>
+             <div class="button-group">
+               <button onclick="punch('System Down In')" style="color: #dc2626; border-color: #dc2626;">System Down In</button>
+               <button onclick="punch('System Down Out')" style="color: #dc2626; border-color: #dc2626;">System Down Out</button>
+             </div>
+          </div>
+        </div>
 
-  <div id="other-buttons">
-     <div class="button-group">
-       <button onclick="punch('Coaching In')">Coaching In</button>
-       <button onclick="punch('Coaching Out')">Coaching Out</button>
-     </div>
-    <div class="button-group">
-      <button onclick="punch('Meeting In')">Meeting In</button>
-      <button onclick="punch('Meeting Out')">Meeting Out</button>
-    </div>
-     <div class="button-group">
-       <button onclick="punch('Personal In')">Personal In</button>
-       <button onclick="punch('Personal Out')">Personal Out</button>
-     </div>
-     <div class="button-group">
-       <button onclick="punch('System Down In')" style="color: #dc2626; border-color: #dc2626;">System Down In</button>
-       <button onclick="punch('System Down Out')" style="color: #dc2626; border-color: #dc2626;">System Down Out</button>
-     </div>
-  </div>
-</div>
-
-        <!-- ================================== -->
-        <!--      TAB 2: MY SCHEDULE PANEL      -->
-        <!-- ================================== -->
         <div id="my-schedule-panel" class="tab-panel">
           <h2 id="my-schedule-title">My Upcoming Schedule</h2>
           <p class="text-color-secondary">Your schedule for the next 7 days.</p>
           <div id="my-schedule-status" class="status-message"></div>
           <div id="my-schedule-display">
-            <!-- JS will populate this -->
-          </div>
+            </div>
         </div>
 
-
-        <!-- ================================== -->
-        <!--      TAB 2.1: MY PROFILE PANEL      -->
-        <!-- ================================== -->
-
         <div id="profile-panel" class="tab-panel">
-  <div style="display:flex; justify-content:space-between; align-items:center; margin-bottom:15px;">
-    <h2>My Employee Profile</h2>
-    <span id="prof-status-badge" class="status-tag">Active</span>
-  </div>
-  
-  <div class="button-group" style="justify-content: flex-start; gap: 10px; border-bottom: none; padding-bottom: 0;">
-    <button class="btn-secondary active" id="btn-prof-general" onclick="switchProfileSubTab('general')">General</button>
-    <button class="btn-secondary" id="btn-prof-contract" onclick="switchProfileSubTab('contract')">Contract & Job</button>
-    <button class="btn-secondary" id="btn-prof-personal" onclick="switchProfileSubTab('personal')">Personal & PII</button>
-    <button class="btn-secondary" id="btn-prof-docs" onclick="switchProfileSubTab('docs')">Documents</button>
-    <button class="btn-secondary" id="btn-prof-finance" onclick="switchProfileSubTab('finance')">Financials</button>
-  </div>
-  <hr class="section-divider" style="margin: 10px 0 20px 0;">
+          <div style="display:flex; justify-content:space-between; align-items:center; margin-bottom:15px;">
+            <h2>My Employee Profile</h2>
+            <span id="prof-status-badge" class="status-tag">Active</span>
+          </div>
+          
+          <div class="button-group" style="justify-content: flex-start; gap: 10px; border-bottom: none; padding-bottom: 0;">
+            <button class="btn-secondary active" id="btn-prof-general" onclick="switchProfileSubTab('general')">General</button>
+            <button class="btn-secondary" id="btn-prof-contract" onclick="switchProfileSubTab('contract')">Contract & Job</button>
+            <button class="btn-secondary" id="btn-prof-personal" onclick="switchProfileSubTab('personal')">Personal & PII</button>
+            <button class="btn-secondary" id="btn-prof-docs" onclick="switchProfileSubTab('docs')">Documents</button>
+            <button class="btn-secondary" id="btn-prof-finance" onclick="switchProfileSubTab('finance')">Financials</button>
+          </div>
+          <hr class="section-divider" style="margin: 10px 0 20px 0;">
 
-  <div id="prof-view-general" class="profile-subview">
-    <form id="prof-form-general" class="form-container">
-      <div class="form-row">
-        <div class="form-group"><label>Full Name</label><input type="text" id="prof-name" readonly class="read-only-field"></div>
-        <div class="form-group"><label>Employee ID</label><input type="text" id="prof-id" readonly class="read-only-field"></div>
-      </div>
-      <div class="form-row">
-        <div class="form-group"><label>Konecta Email</label><input type="text" id="prof-email" readonly class="read-only-field"></div>
-        <div class="form-group"><label>Personal Email</label><input type="text" id="prof-personal-email"></div>
-      </div>
-      <div class="form-row">
-        <div class="form-group"><label>Phone Number</label><input type="text" id="prof-phone"></div>
-        <div class="form-group"><label>Home Address</label><input type="text" id="prof-address"></div>
-      </div>
-      <div class="form-row">
-        <div class="form-group"><label>Emergency Contact</label><input type="text" id="prof-emergency"></div>
-        <div class="form-group"><label>Relationship</label><input type="text" id="prof-relation"></div>
-      </div>
-      <div style="text-align:right; margin-top:15px;">
-        <button type="button" class="btn-primary" onclick="saveProfile()">Save Changes</button>
-      </div>
-    </form>
-  </div>
+          <div id="prof-view-general" class="profile-subview">
+            <form id="prof-form-general" class="form-container">
+              <div class="form-row">
+                <div class="form-group"><label>Full Name</label><input type="text" id="prof-name" readonly class="read-only-field"></div>
+                <div class="form-group"><label>Employee ID</label><input type="text" id="prof-id" readonly class="read-only-field"></div>
+              </div>
+              <div class="form-row">
+                <div class="form-group"><label>Konecta Email</label><input type="text" id="prof-email" readonly class="read-only-field"></div>
+                <div class="form-group"><label>Personal Email</label><input type="text" id="prof-personal-email"></div>
+              </div>
+              <div class="form-row">
+                <div class="form-group"><label>Phone Number</label><input type="text" id="prof-phone"></div>
+                <div class="form-group"><label>Home Address</label><input type="text" id="prof-address"></div>
+              </div>
+              <div class="form-row">
+                <div class="form-group"><label>Emergency Contact</label><input type="text" id="prof-emergency"></div>
+                <div class="form-group"><label>Relationship</label><input type="text" id="prof-relation"></div>
+              </div>
+              <div style="text-align:right; margin-top:15px;">
+                <button type="button" class="btn-primary" onclick="saveProfile()">Save Changes</button>
+              </div>
+            </form>
+          </div>
 
-  <div id="prof-view-contract" class="profile-subview" style="display:none;">
-    <div class="form-container">
-      <h3 style="margin-top:0; color:var(--konecta-blue);">Job Details</h3>
-      <div class="form-row">
-        <div class="form-group"><label>Title</label><input type="text" id="prof-title" readonly class="read-only-field"></div>
-        <div class="form-group"><label>Department</label><input type="text" id="prof-dept" readonly class="read-only-field"></div>
-      </div>
-      <div class="form-row">
-        <div class="form-group"><label>Direct Manager</label><input type="text" id="prof-direct-mgr" readonly class="read-only-field"></div>
-        <div class="form-group"><label>Project Manager</label><input type="text" id="prof-proj-mgr" readonly class="read-only-field"></div>
-      </div>
-      
-      <hr class="section-divider">
-      
-      <h3 style="margin-top:0; color:var(--konecta-blue);">Contract Info</h3>
-      <div class="form-row">
-        <div class="form-group"><label>Hiring Date</label><input type="text" id="prof-hiring" readonly class="read-only-field"></div>
-        <div class="form-group"><label>Contract Type</label><input type="text" id="prof-contract-type" readonly class="read-only-field"></div>
-      </div>
-      <div class="form-row">
-        <div class="form-group"><label>Salary (Confidential)</label><input type="text" id="prof-salary" readonly class="read-only-field"></div>
-        <div class="form-group"><label>IBAN</label><input type="text" id="prof-iban" placeholder="Request change via HR"></div>
-      </div>
-    </div>
-  </div>
+          <div id="prof-view-contract" class="profile-subview" style="display:none;">
+            <div class="form-container">
+              <h3 style="margin-top:0; color:var(--konecta-blue);">Job Details</h3>
+              <div class="form-row">
+                <div class="form-group"><label>Title</label><input type="text" id="prof-title" readonly class="read-only-field"></div>
+                <div class="form-group"><label>Department</label><input type="text" id="prof-dept" readonly class="read-only-field"></div>
+              </div>
+              <div class="form-row">
+                <div class="form-group"><label>Direct Manager</label><input type="text" id="prof-direct-mgr" readonly class="read-only-field"></div>
+                <div class="form-group"><label>Project Manager</label><input type="text" id="prof-proj-mgr" readonly class="read-only-field"></div>
+              </div>
+              
+              <hr class="section-divider">
+              
+              <h3 style="margin-top:0; color:var(--konecta-blue);">Contract Info</h3>
+              <div class="form-row">
+                <div class="form-group"><label>Hiring Date</label><input type="text" id="prof-hiring" readonly class="read-only-field"></div>
+                <div class="form-group"><label>Contract Type</label><input type="text" id="prof-contract-type" readonly class="read-only-field"></div>
+              </div>
+              <div class="form-row">
+                <div class="form-group"><label>Salary (Confidential)</label><input type="text" id="prof-salary" readonly class="read-only-field"></div>
+                <div class="form-group"><label>IBAN</label><input type="text" id="prof-iban" placeholder="Request change via HR"></div>
+              </div>
+            </div>
+          </div>
 
-  <div id="prof-view-personal" class="profile-subview" style="display:none;">
-    <div class="form-container">
-      <div class="form-row">
-        <div class="form-group"><label>National ID</label><input type="text" id="prof-nat-id" readonly class="read-only-field"></div>
-        <div class="form-group"><label>Social Insurance</label><input type="text" id="prof-social" readonly class="read-only-field"></div>
-      </div>
-      <div class="form-row">
-        <div class="form-group"><label>Birth Date</label><input type="text" id="prof-dob" readonly class="read-only-field"></div>
-        <div class="form-group"><label>Age</label><input type="text" id="prof-age" readonly class="read-only-field" style="width:80px;"></div>
-      </div>
-      <div class="form-row">
-        <div class="form-group"><label>Marital Status</label><input type="text" id="prof-marital" readonly class="read-only-field"></div>
-        <div class="form-group"><label>Dependents</label><input type="text" id="prof-dependents" readonly class="read-only-field"></div>
-      </div>
-    </div>
-  </div>
+          <div id="prof-view-personal" class="profile-subview" style="display:none;">
+            <div class="form-container">
+              <div class="form-row">
+                <div class="form-group"><label>National ID</label><input type="text" id="prof-nat-id" readonly class="read-only-field"></div>
+                <div class="form-group"><label>Social Insurance</label><input type="text" id="prof-social" readonly class="read-only-field"></div>
+              </div>
+              <div class="form-row">
+                <div class="form-group"><label>Birth Date</label><input type="text" id="prof-dob" readonly class="read-only-field"></div>
+                <div class="form-group"><label>Age</label><input type="text" id="prof-age" readonly class="read-only-field" style="width:80px;"></div>
+              </div>
+              <div class="form-row">
+                <div class="form-group"><label>Marital Status</label><input type="text" id="prof-marital" readonly class="read-only-field"></div>
+                <div class="form-group"><label>Dependents</label><input type="text" id="prof-dependents" readonly class="read-only-field"></div>
+              </div>
+            </div>
+          </div>
 
-  <div id="prof-view-docs" class="profile-subview" style="display:none;">
-    <div id="doc-list-container" class="request-list">
-      <p class="text-color-secondary">Loading documents...</p>
-    </div>
-  </div>
-  <div id="prof-view-finance" class="profile-subview" style="display:none;">
-  <div class="form-container">
-    <h3 style="margin-top:0; color:var(--konecta-blue);">Compensation Structure</h3>
-    <div class="leave-balances" style="grid-template-columns: repeat(3, 1fr); gap:15px; display:grid; margin-bottom:20px;">
-        <div class="balance-item"><p>Basic Salary</p><span class="balance-days" id="fin-basic">--</span></div>
-        <div class="balance-item"><p>Variable Pay</p><span class="balance-days" id="fin-variable">--</span></div>
-        <div class="balance-item"><p>Total Gross</p><span class="balance-days" id="fin-total">--</span></div>
-    </div>
-    <hr class="section-divider">
-    <h3>Upcoming Entitlements & Payouts</h3>
-    <div id="my-entitlements-list" class="request-list">
-        <p class="text-color-secondary">Loading financial data...</p>
-    </div>
-  </div>
-</div>
+          <div id="prof-view-docs" class="profile-subview" style="display:none;">
+            <div id="doc-list-container" class="request-list">
+              <p class="text-color-secondary">Loading documents...</p>
+            </div>
+          </div>
+          
+          <div id="prof-view-finance" class="profile-subview" style="display:none;">
+            <div class="form-container">
+              <h3 style="margin-top:0; color:var(--konecta-blue);">Compensation Structure</h3>
+              <div class="leave-balances" style="grid-template-columns: repeat(3, 1fr); gap:15px; display:grid; margin-bottom:20px;">
+                  <div class="balance-item"><p>Basic Salary</p><span class="balance-days" id="fin-basic">--</span></div>
+                  <div class="balance-item"><p>Variable Pay</p><span class="balance-days" id="fin-variable">--</span></div>
+                  <div class="balance-item"><p>Total Gross</p><span class="balance-days" id="fin-total">--</span></div>
+              </div>
+              <hr class="section-divider">
+              <h3>Upcoming Entitlements & Payouts</h3>
+              <div id="my-entitlements-list" class="request-list">
+                  <p class="text-color-secondary">Loading financial data...</p>
+              </div>
+            </div>
+          </div>
 
-  <div id="profile-status" class="status-message"></div>
-</div>
+          <div id="profile-status" class="status-message"></div>
+        </div>
 
-        <!-- ================================== -->
-        <!--     TAB 3: MY LEAVE PANEL          -->
-        <!-- ================================== -->
         <div id="leave-request-panel" class="tab-panel">
           <h2>My Balances</h2>
           <div id="leave-balances">
@@ -2040,21 +2015,17 @@ body.dark-mode .status-offline { background-color: #374151; color: #9ca3af; }
           <div class="request-list">
             <h2 style="margin: 0;">My Request History</h2>
             <div id="my-requests-list" class="request-list" style="margin-top: 16px;">
-              <!-- JS will populate this -->
-            </div>
+              </div>
           </div>
         </div>
         
-        <!-- ================================== -->
-        <!--    TAB 4: HISTORY REPORT PANEL     -->
-        <!-- ================================== -->
         <div id="history-report-panel" class="tab-panel">
           <h2>Adherence History Report</h2>
           <form id="history-report-form" class="form-container" style="background-color: var(--input-bg);">
             <div class="form-group" id="history-user-select-container" style="display: none;">
-  <label>Select User(s)</label>
-  <div id="history-user-select-wrapper"></div>
-</div>
+              <label>Select User(s)</label>
+              <div id="history-user-select-wrapper"></div>
+            </div>
             <div class="form-group">
               <label for="history-start-date">Start Date</label>
               <input type="date" id="history-start-date" required>
@@ -2069,14 +2040,10 @@ body.dark-mode .status-offline { background-color: #374151; color: #9ca3af; }
           
           <div id="my-history-status" class="status-message"></div>
           <div id="history-report-display">
-             <p class
-="text-color-secondary" style="margin-top: 20px; text-align: center;">Select users and dates, then click "View History" to generate the report.</p>
+             <p class="text-color-secondary" style="margin-top: 20px; text-align: center;">Select users and dates, then click "View History" to generate the report.</p>
           </div>
         </div>
 
-        <!-- ================================== -->
-        <!--    TAB 5: SCHEDULE EDITOR PANEL    -->
-        <!-- ================================== -->
         <div id="schedule-panel" class="tab-panel">
           
           <form id="csv-import-form" class="form-container">
@@ -2104,9 +2071,9 @@ body.dark-mode .status-offline { background-color: #374151; color: #9ca3af; }
           <form id="schedule-form" class="form-container">
             <h2>Manual Schedule Editor</h2>
             <div class="form-group">
-  <label>User</label>
-  <div id="schedule-agent-select-container"></div>
-</div>
+              <label>User</label>
+              <div id="schedule-agent-select-container"></div>
+            </div>
             <div class="form-row">
               <div class="form-group"><label for="schedule-start-date">Start Date</label><input type="date" id="schedule-start-date" required></div>
               <div class="form-group"><label for="schedule-end-date">End Date (Optional)</label><input type="date" id="schedule-end-date"><small>Leave blank to submit for a single day.</small></div>
@@ -2132,92 +2099,87 @@ body.dark-mode .status-offline { background-color: #374151; color: #9ca3af; }
           </form>
           <div id="schedule-status" class="status-message"></div>
         
+          <hr class="section-divider">
 
-        <hr class="section-divider">
-
-<div id="team-schedule-editor-section">
-    <h2>Team Schedule Editor (Date Range)</h2>
-    <div class="form-container">
-      <div class="form-row">
-        <div class="form-group">
-          <label>Select Agent</label>
-          <div id="sched-edit-email-container"></div> 
-        </div>
-        <div class="form-group"><label>From</label><input type="date" id="schedEditStart"></div>
-        <div class="form-group"><label>To</label><input type="date" id="schedEditEnd"></div>
-      </div>
-      <button type="button" class="btn-secondary" onclick="loadAgentSchedule()">Load Schedule</button>
-    </div>
-    
-    <div id="schedEditorContainer" style="display:none; margin-top:20px;">
-      <table class="report-table">
-        <thead>
-          <tr>
-            <th>Date</th>
-            <th>Start Time</th>
-            <th>End Time</th>
-            <th>Leave Type</th>
-          </tr>
-        </thead>
-        <tbody id="schedEditorBody"></tbody>
-      </table>
-      <br>
-      <button type="button" class="btn-primary" onclick="saveScheduleChanges()">Save Changes</button>
-    </div>
-  </div>
-
-</div> <div id="shift-swaps-panel" class="tab-panel">
-
-
-
-        <!-- ================================== -->
-        <!--   TAB 5.1: SHIFT SWAP PANEL     -->
-        <!-- ================================== -->
-
-
-<div id="shift-swaps-panel" class="tab-panel">
-  <h2>Shift Swap Marketplace</h2>
-  
-  <div class="button-group">
-      <button class="btn-secondary active" onclick="switchSwapTab('market')">Marketplace</button>
-      <button class="btn-secondary" onclick="switchSwapTab('mySwaps')">My Requests</button>
-      <button class="btn-secondary" onclick="switchSwapTab('approvals')" id="swapApproveBtn">Approvals</button>
-  </div>
-  
-  <div id="swap-market" class="swap-view" style="margin-top:20px;">
-      <div class="form-container" style="margin-bottom: 20px;">
-          <h3>Post a Request</h3>
-          <div class="form-row">
-              <div class="form-group"><label>Date to Swap</label><input type="date" id="swapPostDate"></div>
-              <div class="form-group"><label>Current Shift Time</label><input type="text" id="swapPostShift" placeholder="e.g. 09:00 - 18:00"></div>
+          <div id="team-schedule-editor-section">
+            <h2>Team Schedule Editor (Date Range)</h2>
+            <div class="form-container">
+              <div class="form-row">
+                <div class="form-group">
+                  <label>Select Agent</label>
+                  <div id="sched-edit-email-container"></div> 
+                </div>
+                <div class="form-group"><label>From</label><input type="date" id="schedEditStart"></div>
+                <div class="form-group"><label>To</label><input type="date" id="schedEditEnd"></div>
+              </div>
+              <button type="button" class="btn-secondary" onclick="loadAgentSchedule()">Load Schedule</button>
+            </div>
+            
+            <div class="form-group" style="margin-top: 20px;">
+              <label style="font-weight: 600; color: var(--konecta-blue);">Search Agent in Loaded List</label>
+              <input type="text" id="sched-table-search" placeholder="Type name to filter rows..." 
+                     onkeyup="filterScheduleEditorTable()" 
+                     style="width: 100%; padding: 10px; border-radius: 6px; border: 1px solid var(--border-color); background: var(--input-bg); color: var(--text-color);">
+            </div>
+            
+            <div id="schedEditorContainer" style="display:none; margin-top:20px;">
+              <table class="report-table">
+                <thead>
+                  <tr>
+                    <th>Date</th>
+                    <th>Start Time</th>
+                    <th>End Time</th>
+                    <th>Leave Type</th>
+                  </tr>
+                </thead>
+                <tbody id="schedEditorBody"></tbody>
+              </table>
+              <br>
+              <button type="button" class="btn-primary" onclick="saveScheduleChanges()">Save Changes</button>
+            </div>
           </div>
-          <button class="btn-primary" onclick="postSwapRequest()">Post to Market</button>
-      </div>
-      <h3>Available Swaps</h3>
-      <div id="swapMarketBody" class="request-list">Loading...</div>
-  </div>
+        </div> 
 
-  <div id="swap-mySwaps" class="swap-view" style="display:none; margin-top:20px;">
-      <h3>My Swap History</h3>
-      <div id="mySwapsBody" class="request-list">Loading...</div>
-  </div>
+        <div id="shift-swaps-panel" class="tab-panel">
+          <h2>Shift Swap Marketplace</h2>
+          
+          <div class="button-group">
+              <button class="btn-secondary active" onclick="switchSwapTab('market')">Marketplace</button>
+              <button class="btn-secondary" onclick="switchSwapTab('mySwaps')">My Requests</button>
+              <button class="btn-secondary" onclick="switchSwapTab('approvals')" id="swapApproveBtn">Approvals</button>
+          </div>
+          
+          <div id="swap-market" class="swap-view" style="margin-top:20px;">
+              <div class="form-container" style="margin-bottom: 20px;">
+                  <h3>Post a Request</h3>
+                  <div class="form-row">
+                      <div class="form-group"><label>Date to Swap</label><input type="date" id="swapPostDate"></div>
+                      <div class="form-group"><label>Current Shift Time</label><input type="text" id="swapPostShift" placeholder="e.g. 09:00 - 18:00"></div>
+                  </div>
+                  <button class="btn-primary" onclick="postSwapRequest()">Post to Market</button>
+              </div>
+              <h3>Available Swaps</h3>
+              <div id="swapMarketBody" class="request-list">Loading...</div>
+          </div>
 
-  <div id="swap-approvals" class="swap-view" style="display:none; margin-top:20px;">
-      <h3>Pending Approvals</h3>
-      <div id="swapApprovalsBody" class="request-list">Loading...</div>
-  </div>
-</div>
+          <div id="swap-mySwaps" class="swap-view" style="display:none; margin-top:20px;">
+              <h3>My Swap History</h3>
+              <div id="mySwapsBody" class="request-list">Loading...</div>
+          </div>
+
+          <div id="swap-approvals" class="swap-view" style="display:none; margin-top:20px;">
+              <h3>Pending Approvals</h3>
+              <div id="swapApprovalsBody" class="request-list">Loading...</div>
+          </div>
+        </div>
         
-        <!-- ================================== -->
-        <!--   TAB 6: LEAVE APPROVALS PANEL     -->
-        <!-- ================================== -->
         <div id="leave-approval-panel" class="tab-panel">
           <h2>Leave Request Management</h2>
           <form id="leave-report-form" class="form-container" style="background-color: var(--input-bg); display: flex; flex-wrap: wrap; gap: 16px; align-items: flex-end;">
             <div class="form-group" style="flex: 2; min-width: 200px; margin-bottom: 0;">
-  <label>Select User</label>
-  <div id="leave-report-user-container"></div>
-</div>
+              <label>Select User</label>
+              <div id="leave-report-user-container"></div>
+            </div>
             <div class="form-group" style="flex: 1; min-width: 150px; margin-bottom: 0;">
               <label for="leave-report-status">Select Status</label>
               <select id="leave-report-status">
@@ -2232,85 +2194,76 @@ body.dark-mode .status-offline { background-color: #374151; color: #9ca3af; }
 
           <div id="approval-status" class="status-message"></div>
           <div id="pending-requests-list" class="request-list" style="margin-top: 16px;">
-            <!-- JS will populate this -->
-          </div>
+            </div>
         </div>
         
-        <!-- ================================== -->
-        <!--     TAB 7: ADMIN TOOLS PANEL       -->
-        <!-- ================================== -->
         <div id="admin-tools-panel" class="tab-panel">
-  
-  <form id="manual-punch-form" class="form-container">
-    <h2>Manual Punch Editor</h2>
-    <p class="text-color-secondary" style="margin: -16px 0 16px 0;">Manually add or overwrite a punch for a user. This will bypass duplicate/sequential checks and recalculate metrics.</p>
-    <div class="form-group">
-  <label>User</label>
-  <div id="manual-punch-user-container"></div>
-</div>
-    <div class="form-group"><label for="manual-punch-action">Punch Action</label><select id="manual-punch-action" required><option value="">-- Select an action --</option><optgroup label="Adherence"><option value="Login">Login</option><option value="First Break In">First Break In</option><option value="First Break Out">First Break Out</option><option value="Lunch In">Lunch In</option><option value="Lunch Out">Lunch Out</option><option value="Last Break In">Last Break In</option><option value="Last Break Out">Last Break Out</option><option value="Logout">Logout</option></optgroup><optgroup label="Other Codes"><option value="Coaching In">Coaching In</option><option value="Coaching Out">Coaching Out</option><option value="Meeting In">Meeting In</option><option value="Meeting Out">Meeting Out</option><option value="Personal In">Personal In</option><option value="Personal Out">Personal Out</option></optgroup></select></div>
-    <div class="form-row"><div class="form-group"><label for="manual-punch-date">Date of Punch</label><input type="date" id="manual-punch-date" required></div><div class="form-group"><label for="manual-punch-time">Time of Punch</label><input type="time" id="manual-punch-time" required></div></div>
-    <button type="button" class="btn-primary" onclick="submitManualPunch()">Submit Manual Punch</button>
-  </form>
-  <div id="manual-punch-status" class="status-message"></div>
-  
-  <hr class="section-divider">
+          <form id="manual-punch-form" class="form-container">
+            <h2>Manual Punch Editor</h2>
+            <p class="text-color-secondary" style="margin: -16px 0 16px 0;">Manually add or overwrite a punch for a user. This will bypass duplicate/sequential checks and recalculate metrics.</p>
+            <div class="form-group">
+              <label>User</label>
+              <div id="manual-punch-user-container"></div>
+            </div>
+            <div class="form-group"><label for="manual-punch-action">Punch Action</label><select id="manual-punch-action" required><option value="">-- Select an action --</option><optgroup label="Adherence"><option value="Login">Login</option><option value="First Break In">First Break In</option><option value="First Break Out">First Break Out</option><option value="Lunch In">Lunch In</option><option value="Lunch Out">Lunch Out</option><option value="Last Break In">Last Break In</option><option value="Last Break Out">Last Break Out</option><option value="Logout">Logout</option></optgroup><optgroup label="Other Codes"><option value="Coaching In">Coaching In</option><option value="Coaching Out">Coaching Out</option><option value="Meeting In">Meeting In</option><option value="Meeting Out">Meeting Out</option><option value="Personal In">Personal In</option><option value="Personal Out">Personal Out</option></optgroup></select></div>
+            <div class="form-row"><div class="form-group"><label for="manual-punch-date">Date of Punch</label><input type="date" id="manual-punch-date" required></div><div class="form-group"><label for="manual-punch-time">Time of Punch</label><input type="time" id="manual-punch-time" required></div></div>
+            <button type="button" class="btn-primary" onclick="submitManualPunch()">Submit Manual Punch</button>
+          </form>
+          <div id="manual-punch-status" class="status-message"></div>
+          
+          <hr class="section-divider">
 
-  <div id="break-config-section">
-    <h2>Break Configuration (Global)</h2>
-    <p class="text-color-secondary" style="margin: -16px 0 16px 0;">Define the standard and maximum allowed durations (in seconds) for breaks.</p>
-    
-    <div id="break-config-container" class="form-container">
-      <p class="text-color-secondary">Loading configuration...</p>
-    </div>
-    <div style="margin-top: 10px; text-align: right;">
-        <button type="button" class="btn-primary" onclick="saveBreakConfig()">Save Configuration</button>
-    </div>
-    <div id="break-config-status" class="status-message"></div>
-  </div>
-  
-  <hr class="section-divider">
-  
-  <div id="balance-adjustment-section" style="display: none;"> 
-      <form id="balance-adjustment-form" class="form-container">
-      <h2>Leave Balance Management</h2>
-      <p class="text-color-secondary" style="margin: -16px 0 16px 0;">Manually adjust a user's leave balance. Use a positive number (e.g., 2) to add days, and a negative number (e.g., -1) to remove days.</p>
-      <div class="form-group">
-  <label>Select User</label>
-  <div id="balance-user-select-container"></div>
-</div>
-      <div class="form-row">
-        <div class="form-group"><label for="balance-leave-type">Leave Type</label><select id="balance-leave-type"><option value="Annual">Annual</option><option value="Sick">Sick</option><option value="Casual">Casual</option></select></div>
-        <div class="form-group"><label for="balance-amount">Amount to Adjust</label><input type="number" id="balance-amount" step="0.5" placeholder="e.g., -1 or 1.5" required></div>
-      </div>
-      <div class="form-group"><label for="balance-reason">Reason for Adjustment</label><textarea id="balance-reason" rows="2" required></textarea></div>
-      <button type="button" class="btn-primary" style="background-color: var(--konecta-yellow); color: #111827;" onclick="submitBalanceAdjustment()">Submit Balance Adjustment</button>
-    </form>
-    <div id="balance-adjust-status" class="status-message"></div>
-    <hr class="section-divider">
-  </div>
-  
-  <form id="admin-leave-form" class="form-container">
-    <h2>Submit Leave on Behalf of User</h2>
-    <p class="text-color-secondary" style="margin: -16px 0 16px 0;">Submit a leave request for a user. This will check their balance and send it to their assigned supervisor for approval.</p>
-    <div class="form-group">
-  <label>Select User</label>
-  <div id="admin-leave-user-container"></div>
-</div>
-    <div class="form-group"><label for="admin-leave-type">Leave Type</label><select id="admin-leave-type"><option value="Annual">Annual</option><option value="Sick">Sick</option><option value="Casual">Casual</option></select></div>
-    <div class="form-row"><div class="form-group"><label for="admin-leave-start-date">Start Date</label><input type="date" id="admin-leave-start-date" required></div><div class="form-group"><label for="admin-leave-end-date">End Date</label><input type="date" id="admin-leave-end-date"><small>Leave blank for a single-day request.</small></div></div>
-    <div class="form-group"><label for="admin-leave-reason">Reason (Optional)</label><textarea id="admin-leave-reason" rows="3"></textarea></div>
-    <button type="button" class="btn-primary" onclick="submitAdminLeaveRequest()">Submit Request for User</button>
-  </form>
-  <div id="admin-leave-status" class="status-message"></div>
+          <div id="break-config-section">
+            <h2>Break Configuration (Global)</h2>
+            <p class="text-color-secondary" style="margin: -16px 0 16px 0;">Define the standard and maximum allowed durations (in seconds) for breaks.</p>
+            
+            <div id="break-config-container" class="form-container">
+              <p class="text-color-secondary">Loading configuration...</p>
+            </div>
+            <div style="margin-top: 10px; text-align: right;">
+                <button type="button" class="btn-primary" onclick="saveBreakConfig()">Save Configuration</button>
+            </div>
+            <div id="break-config-status" class="status-message"></div>
+          </div>
+          
+          <hr class="section-divider">
+          
+          <div id="balance-adjustment-section" style="display: none;"> 
+              <form id="balance-adjustment-form" class="form-container">
+              <h2>Leave Balance Management</h2>
+              <p class="text-color-secondary" style="margin: -16px 0 16px 0;">Manually adjust a user's leave balance. Use a positive number (e.g., 2) to add days, and a negative number (e.g., -1) to remove days.</p>
+              <div class="form-group">
+                <label>Select User</label>
+                <div id="balance-user-select-container"></div>
+              </div>
+              <div class="form-row">
+                <div class="form-group"><label for="balance-leave-type">Leave Type</label><select id="balance-leave-type"><option value="Annual">Annual</option><option value="Sick">Sick</option><option value="Casual">Casual</option></select></div>
+                <div class="form-group"><label for="balance-amount">Amount to Adjust</label><input type="number" id="balance-amount" step="0.5" placeholder="e.g., -1 or 1.5" required></div>
+              </div>
+              <div class="form-group"><label for="balance-reason">Reason for Adjustment</label><textarea id="balance-reason" rows="2" required></textarea></div>
+              <button type="button" class="btn-primary" style="background-color: var(--konecta-yellow); color: #111827;" onclick="submitBalanceAdjustment()">Submit Balance Adjustment</button>
+            </form>
+            <div id="balance-adjust-status" class="status-message"></div>
+            <hr class="section-divider">
+          </div>
+          
+          <form id="admin-leave-form" class="form-container">
+            <h2>Submit Leave on Behalf of User</h2>
+            <p class="text-color-secondary" style="margin: -16px 0 16px 0;">Submit a leave request for a user. This will check their balance and send it to their assigned supervisor for approval.</p>
+            <div class="form-group">
+              <label>Select User</label>
+              <div id="admin-leave-user-container"></div>
+            </div>
+            <div class="form-group"><label for="admin-leave-type">Leave Type</label><select id="admin-leave-type"><option value="Annual">Annual</option><option value="Sick">Sick</option><option value="Casual">Casual</option></select></div>
+            <div class="form-row"><div class="form-group"><label for="admin-leave-start-date">Start Date</label><input type="date" id="admin-leave-start-date" required></div><div class="form-group"><label for="admin-leave-end-date">End Date</label><input type="date" id="admin-leave-end-date"><small>Leave blank for a single-day request.</small></div></div>
+            <div class="form-group"><label for="admin-leave-reason">Reason (Optional)</label><textarea id="admin-leave-reason" rows="3"></textarea></div>
+            <button type="button" class="btn-primary" onclick="submitAdminLeaveRequest()">Submit Request for User</button>
+          </form>
+          <div id="admin-leave-status" class="status-message"></div>
 
-  <hr class="section-divider">
+          <hr class="section-divider">
+        </div>
 
-</div>
-
-        <!-- ================================== -->
-        <!--     TAB 8: DASHBOARD PANEL         -->
-        <!-- ================================== -->
         <div id="dashboard-panel" class="tab-panel">
           <h2 id="dashboard-title">Team Dashboard</h2>
           <div id="dashboard-controls" class="form-container" style="background-color: var(--input-bg);">
@@ -2378,9 +2331,6 @@ body.dark-mode .status-offline { background-color: #374151; color: #9ca3af; }
           </div>
         </div>
         
-        <!-- ================================== -->
-        <!--    NEW TAB 9: REPORTING LINE       -->
-        <!-- ================================== -->
         <div id="reporting-line-panel" class="tab-panel">
 
           <div id="pending-movements-section">
@@ -2395,54 +2345,54 @@ body.dark-mode .status-offline { background-color: #374151; color: #9ca3af; }
           <hr class="section-divider">
 
           <form id="reporting-line-form" class="form-container">
-  <h2>Submit New Movement Request</h2>
-  <p class="text-color-secondary" style="margin: -16px 0 16px 0;">Select a user to move. You will be prompted to confirm their Project Manager.</p>
-  
-  <div class="form-group">
-    <label>Select User to Move</label>
-    <div id="reporting-line-user-container" onchange="onReportingLineUserChange()"></div>
-  </div>
+            <h2>Submit New Movement Request</h2>
+            <p class="text-color-secondary" style="margin: -16px 0 16px 0;">Select a user to move. You will be prompted to confirm their Project Manager.</p>
+            
+            <div class="form-group">
+              <label>Select User to Move</label>
+              <div id="reporting-line-user-container" onchange="onReportingLineUserChange()"></div>
+            </div>
 
-  <div class="form-group">
-    <label>Assign New Direct Manager</label>
-    <div id="reporting-line-supervisor-container"></div>
-  </div>
+            <div class="form-group">
+              <label>Assign New Direct Manager</label>
+              <div id="reporting-line-supervisor-container"></div>
+            </div>
 
-  <div id="pm-change-section" style="display:none; padding: 15px; background: var(--input-bg); border: 1px solid var(--border-color); border-radius: 6px; margin-bottom: 20px;">
-    <label style="color: var(--konecta-blue); font-weight:600;">Project Manager Selection</label>
-    <p style="margin: 5px 0 10px 0; font-size: 0.9rem;">
-      Current Project Manager: <strong id="current-pm-display">Loading...</strong>
-    </p>
-    
-    <div style="margin-bottom: 10px;">
-      <label style="margin-right: 15px; cursor: pointer;">
-        <input type="radio" name="pm-action" value="keep" checked onclick="togglePMDropdown(false)"> Keep Current
-      </label>
-      <label style="cursor: pointer;">
-        <input type="radio" name="pm-action" value="change" onclick="togglePMDropdown(true)"> Change
-      </label>
-    </div>
+            <div id="pm-change-section" style="display:none; padding: 15px; background: var(--input-bg); border: 1px solid var(--border-color); border-radius: 6px; margin-bottom: 20px;">
+              <label style="color: var(--konecta-blue); font-weight:600;">Project Manager Selection</label>
+              <p style="margin: 5px 0 10px 0; font-size: 0.9rem;">
+                Current Project Manager: <strong id="current-pm-display">Loading...</strong>
+              </p>
+              
+              <div style="margin-bottom: 10px;">
+                <label style="margin-right: 15px; cursor: pointer;">
+                  <input type="radio" name="pm-action" value="keep" checked onclick="togglePMDropdown(false)"> Keep Current
+                </label>
+                <label style="cursor: pointer;">
+                  <input type="radio" name="pm-action" value="change" onclick="togglePMDropdown(true)"> Change
+                </label>
+              </div>
 
-    <div id="pm-dropdown-wrapper" style="display:none;">
-      <label>Select New Project Manager</label>
-      <div id="reporting-line-pm-container"></div>
-    </div>
-  </div>
-  
-  <button type="button" class="btn-primary" onclick="submitMovementRequest()">Submit Movement Request</button>
-</form>
+              <div id="pm-dropdown-wrapper" style="display:none;">
+                <label>Select New Project Manager</label>
+                <div id="reporting-line-pm-container"></div>
+              </div>
+            </div>
+            
+            <button type="button" class="btn-primary" onclick="submitMovementRequest()">Submit Movement Request</button>
+          </form>
           <div id="movement-request-status" class="status-message"></div>
 
           <hr class="section-divider">
 
           <div id="movement-history-section">
             <h2>User Movement History</h2>
-            <p classs="text-color-secondary">Select one of your subordinates to view their complete movement history.</p>
+            <p class="text-color-secondary">Select one of your subordinates to view their complete movement history.</p>
             <form id="movement-history-form" class="form-container" style="background-color: var(--input-bg); display: flex; flex-wrap: wrap; gap: 16px; align-items: flex-end;">
               <div class="form-group" style="flex: 2; min-width: 200px; margin-bottom: 0;">
-  <label>Select User</label>
-  <div id="movement-history-user-container"></div>
-</div>
+                <label>Select User</label>
+                <div id="movement-history-user-container"></div>
+              </div>
               <button type="button" class="btn-primary" onclick="loadMovementHistory()">Load History</button>
             </form>
             <div id="movement-history-status" class="status-message"></div>
@@ -2450,20 +2400,16 @@ body.dark-mode .status-offline { background-color: #374151; color: #9ca3af; }
               <p class="text-color-secondary">Select a user to view their movement history.</p>
             </div>
           </div>
-
         </div>
 
-        <!-- ================================== -->
-        <!--    NEW TAB 10: COACHING PANEL      -->
-        <!-- ================================== -->
         <div id="coaching-panel" class="tab-panel">
           
           <div id="coaching-form-container" class="form-container" style="display: none;">
             <h2>Submit New Coaching</h2>
             <div class="form-group">
-  <label>Select User</label>
-  <div id="coaching-agent-select-container"></div>
-</div>
+              <label>Select User</label>
+              <div id="coaching-agent-select-container"></div>
+            </div>
             <div class="form-group">
               <label for="coaching-template-select">Select Coaching Template</label>
               <select id="coaching-template-select" required onchange="loadCoachingForm()">
@@ -2485,8 +2431,7 @@ body.dark-mode .status-offline { background-color: #374151; color: #9ca3af; }
               <span id="coaching-overall-score" style="float: right;">N/A</span>
             </h3>
             <div id="quality-score-form">
-              <!-- JS will populate this -->
-            </div>
+              </div>
             
             <hr class="section-divider">
 
@@ -2517,9 +2462,6 @@ body.dark-mode .status-offline { background-color: #374151; color: #9ca3af; }
           </div>
         </div>
         
-        <!-- ================================== -->
-        <!--   TAB 11: COACHING ADMIN PANEL     -->
-        <!-- ================================== -->
         <div id="coaching-admin-panel" class="tab-panel" style="display:none;">
           <form id="template-create-form" class="form-container">
             <h2>Create New Coaching Template</h2>
@@ -2531,8 +2473,7 @@ body.dark-mode .status-offline { background-color: #374151; color: #9ca3af; }
             </div>
             
             <div id="template-categories-container">
-              <!-- JS will populate this -->
-            </div>
+              </div>
             
             <button type="button" class="btn-secondary" onclick="addTemplateCategory()" style="margin: 10px 0;">+ Add Category</button>
             <hr class="section-divider">
@@ -2541,65 +2482,54 @@ body.dark-mode .status-offline { background-color: #374151; color: #9ca3af; }
           <div id="coaching-admin-status" class="status-message"></div>
         </div>
 
-        <!-- ================================== -->
-        <!--  TAB 12: REGISTRATION ADMIN PANEL  -->
-        <!-- ================================== -->
         <div id="registration-admin-panel" class="tab-panel">
           <h2>New User Registrations</h2>
           <p class="text-color-secondary">Approve or deny new users who have registered and selected their supervisor. Approving them will activate their account.</p>
           <div id="registration-admin-status" class="status-message"></div>
           <div id="registration-admin-list" class="request-list" style="margin-top: 16px;">
-            <!-- JS will populate this -->
-          </div>
+            </div>
         </div>
 
-        <!-- ================================== -->
-        <!--  TAB 12.1: PROJECT ADMIN PANEL  -->
-        <!-- ================================== -->
-        
-
         <div id="project-admin-panel" class="tab-panel">
-  <h2>Project Dashboard</h2>
-  
-  <div class="form-group">
-      <label>Select Project</label>
-      <select id="project-admin-select" onchange="loadProjectDashboardData()">
-          <option value="">-- Loading --</option>
-      </select>
-  </div>
+          <h2>Project Dashboard</h2>
+          
+          <div class="form-group">
+              <label>Select Project</label>
+              <select id="project-admin-select" onchange="loadProjectDashboardData()">
+                  <option value="">-- Loading --</option>
+              </select>
+          </div>
 
-  <div id="project-stats-grid" style="display:grid; grid-template-columns: repeat(4, 1fr); gap:15px; margin-bottom:20px;">
-      <div class="metric-card"><span class="metric-title">Total Staff</span><span class="metric-value" id="prj-stat-total">0</span></div>
-      <div class="metric-card"><span class="metric-title">Agents</span><span class="metric-value" id="prj-stat-agents">0</span></div>
-      <div class="metric-card"><span class="metric-title">Supervisors</span><span class="metric-value" id="prj-stat-supers">0</span></div>
-      <div class="metric-card"><span class="metric-title">TLs</span><span class="metric-value" id="prj-stat-tls">0</span></div>
-  </div>
+          <div id="project-stats-grid" style="display:grid; grid-template-columns: repeat(4, 1fr); gap:15px; margin-bottom:20px;">
+              <div class="metric-card"><span class="metric-title">Total Staff</span><span class="metric-value" id="prj-stat-total">0</span></div>
+              <div class="metric-card"><span class="metric-title">Agents</span><span class="metric-value" id="prj-stat-agents">0</span></div>
+              <div class="metric-card"><span class="metric-title">Supervisors</span><span class="metric-value" id="prj-stat-supers">0</span></div>
+              <div class="metric-card"><span class="metric-title">TLs</span><span class="metric-value" id="prj-stat-tls">0</span></div>
+          </div>
 
-  <hr class="section-divider">
+          <hr class="section-divider">
 
-  <h3>Recent Requests (Audit Log)</h3>
-  <div id="project-requests-list" class="request-list">
-      <p class="text-color-secondary">Select a project to view requests.</p>
-  </div>
-  
-  <hr class="section-divider">
-  
-  <form id="project-form" class="form-container">
-    <h3>Create/Edit Project</h3>
-    <div class="form-group">
-      <label>Project Name</label>
-      <input type="text" id="proj-name" required>
-    </div>
-    <div class="form-group">
-      <label>Project Manager Email</label>
-      <input type="email" id="proj-manager">
-    </div>
-    <button type="button" class="btn-primary" onclick="saveProject()">Save Project</button>
-  </form>
-</div>
-        <!-- ================================== -->
-        <!--  TAB 13: ANNOUNCEMENTS ADMIN PANEL -->
-        <!-- ================================== -->
+          <h3>Recent Requests (Audit Log)</h3>
+          <div id="project-requests-list" class="request-list">
+              <p class="text-color-secondary">Select a project to view requests.</p>
+          </div>
+          
+          <hr class="section-divider">
+          
+          <form id="project-form" class="form-container">
+            <h3>Create/Edit Project</h3>
+            <div class="form-group">
+              <label>Project Name</label>
+              <input type="text" id="proj-name" required>
+            </div>
+            <div class="form-group">
+              <label>Project Manager Email</label>
+              <input type="email" id="proj-manager">
+            </div>
+            <button type="button" class="btn-primary" onclick="saveProject()">Save Project</button>
+          </form>
+        </div>
+
         <div id="announcements-admin-panel" class="tab-panel">
           <h2>Manage Announcements</h2>
           <p class="text-color-secondary">Create, edit, or delete announcements that appear on the Punch Clock.</p>
@@ -2630,376 +2560,332 @@ body.dark-mode .status-offline { background-color: #374151; color: #9ca3af; }
           </div>
         </div>
 
-        <!-- ================================== -->
-        <!--  TAB 14: Recruitment PANEL -->
-        <!-- ================================== -->
-
         <div id="recruitment-panel" class="tab-panel">
-  <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 20px;">
-    <h2>Recruitment & Hiring</h2>
-    <div>
-        <button class="btn-secondary" onclick="toggleJobBoard()">Manage Job Board</button>
-        <button class="btn-primary" onclick="showRequisitionModal()">+ Open Requisition</button>
-    </div>
-  </div>
-
-  <div id="job-board-view" style="display:none; margin-bottom: 20px; background: var(--card-bg); padding: 20px; border-radius: 8px; border: 1px solid var(--border-color);">
-    <h3>Active Job Requisitions</h3>
-    <div id="job-list-container">Loading jobs...</div>
-  </div>
-
-  <div class="form-group">
-    <input type="text" id="candidate-search" placeholder="Search candidates..." onkeyup="filterCandidates()" style="max-width: 300px;">
-  </div>
-
-  <div id="candidate-list" class="request-list">
-    <p class="text-color-secondary">Loading pipeline...</p>
-  </div>
-</div>
-
-        <!-- ================================== -->
-        <!--  TAB 15: Performance PANEL -->
-        <!-- ================================== -->
-
-
-<div id="performance-panel" class="tab-panel">
-  <h2>Performance Management</h2>
-  
-  <div id="manager-review-section" style="display:none; margin-bottom:30px; background:var(--input-bg); padding:20px; border-radius:8px; border:1px solid var(--border-color);">
-    <h3 style="margin-top:0; color:var(--konecta-blue);">Submit New Review</h3>
-    <form id="perf-form">
-      <div class="form-row">
-        <div class="form-group">
-  <label>Select Employee</label>
-  <div id="perf-employee-select-container"></div>
-</div>
-        <div class="form-group">
-          <label>Review Period</label>
-          <select id="perf-period">
-            <option value="Q1">Q1</option>
-            <option value="Q2">Q2</option>
-            <option value="Q3">Q3</option>
-            <option value="Q4">Q4</option>
-            <option value="Annual">Annual</option>
-            <option value="Probation">Probation</option>
-          </select>
-        </div>
-        <div class="form-group">
-          <label>Year</label>
-          <input type="number" id="perf-year" value="2025">
-        </div>
-      </div>
-      <div class="form-group">
-        <label>Rating (1 - Poor to 5 - Excellent)</label>
-        <div style="display:flex; gap:15px; align-items:center;">
-          <input type="range" id="perf-rating" min="1" max="5" step="1" oninput="document.getElementById('rating-val').innerText = this.value">
-          <span id="rating-val" style="font-weight:bold; font-size:1.2rem; color:var(--konecta-dark);">3</span>
-        </div>
-      </div>
-      <div class="form-group">
-        <label>Manager Comments</label>
-        <textarea id="perf-comments" rows="3" placeholder="Highlight achievements and areas for improvement..."></textarea>
-      </div>
-      <button type="button" class="btn-primary" onclick="submitPerformanceReview()">Submit Review</button>
-    </form>
-    <div id="perf-submit-status" class="status-message"></div>
-  </div>
-
-  <h3 style="margin-bottom:15px;">My Performance History</h3>
-  <div id="perf-history-list" class="request-list">
-    <p class="text-color-secondary">Loading reviews...</p>
-  </div>
-</div>
-
-
-        <!-- ================================== -->
-        <!--  TAB 16: Finance ADMIN PANEL -->
-        <!-- ================================== -->
-
-
-<div id="finance-admin-panel" class="tab-panel">
-  <h2>Financial Management</h2>
-  
-  <div class="button-group">
-      <button class="btn-secondary" onclick="document.getElementById('fin-create-tmpl').style.display='block'">Create Template</button>
-      <button class="btn-secondary" onclick="loadEntitlementTemplates()">Load Templates</button>
-  </div>
-
-  <div id="fin-create-tmpl" class="form-container" style="display:none; margin-bottom:20px;">
-      <h3>New Entitlement Template</h3>
-      <div class="form-row">
-          <div class="form-group"><label>Template Name</label><input type="text" id="tmpl-name" placeholder="e.g. Q1 Performance Bonus"></div>
-          <div class="form-group">
-            <label>Type</label>
-            <input type="text" id="tmpl-type" list="entitlement-types" placeholder="Select or type custom...">
-            <datalist id="entitlement-types">
-                <option value="Bonus">Bonus</option>
-                <option value="Deduction">Deduction</option>
-                <option value="Allowance">Allowance</option>
-                <option value="Variable Pay">Variable Pay</option>
-                <option value="One Time Payment">One Time Payment</option>
-                <option value="Overtime Payout">Overtime Payout</option>
-            </datalist>
+          <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 20px;">
+            <h2>Recruitment & Hiring</h2>
+            <div>
+                <button class="btn-secondary" onclick="toggleJobBoard()">Manage Job Board</button>
+                <button class="btn-primary" onclick="showRequisitionModal()">+ Open Requisition</button>
+            </div>
           </div>
-      </div>
-      <div class="form-row">
-          <div class="form-group"><label>Default Amount</label><input type="number" id="tmpl-amount"></div>
-          <div class="form-group"><label>Currency</label><input type="text" id="tmpl-curr" value="EGP"></div>
-      </div>
-      <button class="btn-primary" onclick="saveEntitlementTemplate()">Save Template</button>
-  </div>
 
-  <hr class="section-divider">
-
-  <h3>Apply Template to Employees</h3>
-  <div class="form-container">
-      <div class="form-group">
-          <label>Select Template</label>
-          <select id="fin-apply-tmpl-select"><option>-- Load Templates First --</option></select>
-      </div>
-      <div class="form-group">
-          <label>Select Users</label>
-          <div id="fin-apply-users-container"></div> </div>
-      <button class="btn-primary" onclick="applyTemplateToUsers()">Apply to Selected</button>
-  </div>
-</div>
-
-        <!-- ================================== -->
-        <!--  TAB 16:  ADMIN PANEL -->
-        <!-- ================================== -->
-
-<div id="hr-admin-panel" class="tab-panel">
-  <h2>HR Administration</h2>
-
-  <div class="info-card" style="text-align: left; background-color: var(--status-info-bg); border-color: var(--status-info-text);">
-    <h3 style="margin-top: 0; font-size: 1rem; color: var(--status-info-text);">Pending Data Change Requests</h3>
-    <div id="hr-data-requests-list" style="max-height: 150px; overflow-y: auto; margin-top: 10px;">
-      <p class="text-color-secondary">Loading requests...</p>
-    </div>
-  </div>
-
-  <hr class="section-divider">
-
-  <div class="form-container">
-    <h3>Employee PII Editor</h3>
-    <div class="form-group" style="display: flex; gap: 10px;">
-      <input type="text" id="hr-pii-search" placeholder="Search by Name or Email..." style="flex: 1;">
-      <button class="btn-primary" onclick="searchEmployeePII()">Search</button>
-    </div>
-    <div id="hr-pii-search-status" class="status-message"></div>
-
-    <div id="hr-pii-form-container" style="display: none; margin-top: 20px; border-top: 1px solid var(--border-color); padding-top: 20px;">
-      <input type="hidden" id="hr-pii-empid">
-      <h4 id="hr-pii-header" style="color: var(--konecta-blue);"></h4>
-      
-      <div class="form-row">
-        <div class="form-group"><label>National ID</label><input type="text" id="hr-pii-natid"></div>
-        <div class="form-group"><label>Passport No.</label><input type="text" id="hr-pii-passport"></div>
-      </div>
-      <div class="form-row">
-        <div class="form-group"><label>Social Insurance</label><input type="text" id="hr-pii-social"></div>
-        <div class="form-group"><label>IBAN</label><input type="text" id="hr-pii-iban"></div>
-      </div>
-      <div class="form-row">
-        <div class="form-group"><label>Personal Email</label><input type="email" id="hr-pii-pemail"></div>
-        <div class="form-group"><label>Phone</label><input type="text" id="hr-pii-phone"></div>
-      </div>
-      <div class="form-row">
-        <div class="form-group"><label>Address</label><input type="text" id="hr-pii-address"></div>
-        <div class="form-group"><label>Marital Status</label>
-          <select id="hr-pii-marital">
-            <option value="Single">Single</option>
-            <option value="Married">Married</option>
-            <option value="Divorced">Divorced</option>
-          </select>
-        </div>
-      </div>
-      <div class="form-row">
-        <div class="form-group"><label>Basic Salary</label><input type="number" id="hr-pii-basic"></div>
-        <div class="form-group"><label>Variable Pay</label><input type="number" id="hr-pii-variable"></div>
-      </div>
-
-      <button class="btn-primary" onclick="saveEmployeePII()">Save Changes</button>
-    </div>
-  </div>
-
-  <hr class="section-divider">
-
-  <div class="form-container">
-    <h3>Leave Balance Adjustment</h3>
-    <div class="form-group">
-      <label>Select User</label>
-      <div id="hr-balance-user-select-container"></div>
-    </div>
-    <div class="form-row">
-      <div class="form-group"><label>Type</label><select id="hr-balance-type"><option value="Annual">Annual</option><option value="Sick">Sick</option><option value="Casual">Casual</option></select></div>
-      <div class="form-group"><label>Amount (+/-)</label><input type="number" id="hr-balance-amount" step="0.5"></div>
-    </div>
-    <div class="form-group"><label>Reason</label><input type="text" id="hr-balance-reason"></div>
-    <button class="btn-primary" style="background-color: var(--konecta-yellow); color: #000;" onclick="submitHrBalanceAdjustment()">Adjust Balance</button>
-    <div id="hr-balance-status" class="status-message"></div>
-  </div>
-
-  <br>
-  
-
-</div>
-
-        <!-- ================================== -->
-        <!--  TAB 17: Overtime PANEL -->
-        <!-- ================================== -->
-
-
-<div id="overtime-panel" class="tab-panel">
-  <h2>Overtime & Day Off Management</h2>
-  
-  <div class="form-container">
-    <div style="display:flex; justify-content:space-between;">
-        <h3>Request / Assign Hours</h3>
-        <div id="ot-assign-toggle" style="display:none;">
-            <label><input type="checkbox" id="ot-is-assignment" onchange="toggleOtAssignment()"> Assign to Agent</label>
-        </div>
-    </div>
-
-    <div id="ot-employee-select-wrapper" style="display:none; margin-bottom:15px; padding:10px; background:#f3f4f6; border-radius:6px;">
-        
-        <div id="ot-employee-select-container"></div>
-    </div>
-
-    <div class="form-row">
-      <div class="form-group"><label>Date</label><input type="date" id="ot-req-date"></div>
-      <div class="form-group">
-        <label>Type</label>
-        <select id="ot-req-type">
-          <option value="Post-Shift">Post-Shift (Stay Late)</option>
-          <option value="Pre-Shift">Pre-Shift (Come Early)</option>
-          <option value="Work Day Off">Work Day Off (Cancel Off)</option>
-        </select>
-      </div>
-    </div>
-    
-    <div class="form-row">
-      <div class="form-group"><label>Start</label><input type="time" id="ot-req-start"></div>
-      <div class="form-group"><label>End</label><input type="time" id="ot-req-end"></div>
-    </div>
-
-    <div class="form-group"><label>Reason</label><input type="text" id="ot-req-reason" placeholder="Reason..."></div>
-    <button class="btn-primary" onclick="submitOtRequest()">Submit</button>
-    <div id="ot-status" class="status-message"></div>
-  </div>
-
-  <hr class="section-divider">
-
-  <div style="display: flex; justify-content: space-between; align-items: flex-end; margin-bottom: 15px;">
-    <h3 style="margin: 0;">Request History</h3>
-    <div class="form-group" style="margin: 0; min-width: 180px;">
-        <label for="ot-filter-status" style="font-size: 0.8rem; margin-bottom: 4px;">Filter Status</label>
-        <select id="ot-filter-status" onchange="loadOvertimeRequests()" style="padding: 8px; border-radius: 6px; border: 1px solid var(--border-color); background: var(--card-bg); width: 100%;">
-            <option value="Pending">⚡ Pending Actions</option>
-            <option value="Approved">✅ Approved</option>
-            <option value="Denied">❌ Denied</option>
-            <option value="All">📂 All History</option>
-        </select>
-    </div>
-  </div>
-  <div id="ot-request-list" class="request-list">Loading...</div> </div>
-
-        <!-- ================================== -->
-        <!--  TAB 18: offboarding PANEL -->
-        <!-- ================================== -->
-
-  <div id="offboarding-panel" class="tab-panel">
-  <h2>Offboarding & Exits</h2>
-  
-  <div id="offboard-initiate-section" class="form-container" style="margin-bottom:20px; border-color: #dc2626;">
-      <h3 style="color:#dc2626; margin-top:0;">⚠ Initiate Termination</h3>
-      <p class="text-color-secondary">Submit a request to terminate an employee. Requires HR Approval.</p>
-      <div class="form-row">
-          <div class="form-group">
-              <label>Select Employee</label>
-              <div id="offboard-term-user-container"></div>
+          <div id="job-board-view" style="display:none; margin-bottom: 20px; background: var(--card-bg); padding: 20px; border-radius: 8px; border: 1px solid var(--border-color);">
+            <h3>Active Job Requisitions</h3>
+            <div id="job-list-container">Loading jobs...</div>
           </div>
-          <div class="form-group"><label>Exit Date</label><input type="date" id="term-date"></div>
-      </div>
-      <div class="form-group"><label>Reason</label><textarea id="term-reason" rows="2"></textarea></div>
-      <button class="btn-danger" onclick="submitTermination()">Submit Termination</button>
-  </div>
 
-  <hr class="section-divider">
+          <div class="form-group">
+            <input type="text" id="candidate-search" placeholder="Search candidates..." onkeyup="filterCandidates()" style="max-width: 300px;">
+          </div>
 
-  <div style="display:flex; justify-content:space-between; align-items:center;">
-      <h3>Request Queue</h3>
-      <button class="btn-secondary" onclick="loadOffboardingRequests()">Refresh</button>
-  </div>
-  <div id="offboarding-list" class="request-list">Loading...</div>
-</div>
+          <div id="candidate-list" class="request-list">
+            <p class="text-color-secondary">Loading pipeline...</p>
+          </div>
+        </div>
 
+        <div id="performance-panel" class="tab-panel">
+          <h2>Performance Management</h2>
+          
+          <div id="manager-review-section" style="display:none; margin-bottom:30px; background:var(--input-bg); padding:20px; border-radius:8px; border:1px solid var(--border-color);">
+            <h3 style="margin-top:0; color:var(--konecta-blue);">Submit New Review</h3>
+            <form id="perf-form">
+              <div class="form-row">
+                <div class="form-group">
+                  <label>Select Employee</label>
+                  <div id="perf-employee-select-container"></div>
+                </div>
+                <div class="form-group">
+                  <label>Review Period</label>
+                  <select id="perf-period">
+                    <option value="Q1">Q1</option>
+                    <option value="Q2">Q2</option>
+                    <option value="Q3">Q3</option>
+                    <option value="Q4">Q4</option>
+                    <option value="Annual">Annual</option>
+                    <option value="Probation">Probation</option>
+                  </select>
+                </div>
+                <div class="form-group">
+                  <label>Year</label>
+                  <input type="number" id="perf-year" value="2025">
+                </div>
+              </div>
+              <div class="form-group">
+                <label>Rating (1 - Poor to 5 - Excellent)</label>
+                <div style="display:flex; gap:15px; align-items:center;">
+                  <input type="range" id="perf-rating" min="1" max="5" step="1" oninput="document.getElementById('rating-val').innerText = this.value">
+                  <span id="rating-val" style="font-weight:bold; font-size:1.2rem; color:var(--konecta-dark);">3</span>
+                </div>
+              </div>
+              <div class="form-group">
+                <label>Manager Comments</label>
+                <textarea id="perf-comments" rows="3" placeholder="Highlight achievements and areas for improvement..."></textarea>
+              </div>
+              <button type="button" class="btn-primary" onclick="submitPerformanceReview()">Submit Review</button>
+            </form>
+            <div id="perf-submit-status" class="status-message"></div>
+          </div>
 
+          <h3 style="margin-bottom:15px;">My Performance History</h3>
+          <div id="perf-history-list" class="request-list">
+            <p class="text-color-secondary">Loading reviews...</p>
+          </div>
+        </div>
 
-        <!-- ================================== -->
-        <!--  TAB 18: Analytics PANEL -->
-        <!-- ================================== -->
+        <div id="finance-admin-panel" class="tab-panel">
+          <h2>Financial Management</h2>
+          
+          <div class="button-group">
+              <button class="btn-secondary" onclick="document.getElementById('fin-create-tmpl').style.display='block'">Create Template</button>
+              <button class="btn-secondary" onclick="loadEntitlementTemplates()">Load Templates</button>
+          </div>
 
+          <div id="fin-create-tmpl" class="form-container" style="display:none; margin-bottom:20px;">
+              <h3>New Entitlement Template</h3>
+              <div class="form-row">
+                  <div class="form-group"><label>Template Name</label><input type="text" id="tmpl-name" placeholder="e.g. Q1 Performance Bonus"></div>
+                  <div class="form-group">
+                    <label>Type</label>
+                    <input type="text" id="tmpl-type" list="entitlement-types" placeholder="Select or type custom...">
+                    <datalist id="entitlement-types">
+                        <option value="Bonus">Bonus</option>
+                        <option value="Deduction">Deduction</option>
+                        <option value="Allowance">Allowance</option>
+                        <option value="Variable Pay">Variable Pay</option>
+                        <option value="One Time Payment">One Time Payment</option>
+                        <option value="Overtime Payout">Overtime Payout</option>
+                    </datalist>
+                  </div>
+              </div>
+              <div class="form-row">
+                  <div class="form-group"><label>Default Amount</label><input type="number" id="tmpl-amount"></div>
+                  <div class="form-group"><label>Currency</label><input type="text" id="tmpl-curr" value="EGP"></div>
+              </div>
+              <button class="btn-primary" onclick="saveEntitlementTemplate()">Save Template</button>
+          </div>
 
-<div id="analytics-panel" class="tab-panel">
-  <h2>Enterprise Reports & Analytics</h2>
-  
-  <div class="form-container" style="display:flex; gap:15px; flex-wrap:wrap; align-items:flex-end; background:var(--input-bg);">
-      <div class="form-group" style="flex:1; min-width:200px;">
-          <label>Select User</label>
-          <div id="analytics-user-select-container"></div>
-      </div>
+          <hr class="section-divider">
 
-      <div class="form-group">
-          <label>From</label>
-          <input type="date" id="an-start-date">
-      </div>
-      <div class="form-group">
-          <label>To</label>
-          <input type="date" id="an-end-date">
-      </div>
+          <h3>Apply Template to Employees</h3>
+          <div class="form-container">
+              <div class="form-group">
+                  <label>Select Template</label>
+                  <select id="fin-apply-tmpl-select"><option>-- Load Templates First --</option></select>
+              </div>
+              <div class="form-group">
+                  <label>Select Users</label>
+                  <div id="fin-apply-users-container"></div> </div>
+              <button class="btn-primary" onclick="applyTemplateToUsers()">Apply to Selected</button>
+          </div>
+        </div>
 
-      <div class="form-group" style="display: flex; gap: 10px;">
-        <button type="button" class="btn-primary" onclick="loadAnalyticsData()">Generate Report</button>
-        <button type="button" class="export-btn" onclick="downloadPayrollReport()">📥 Export CSV</button>
-      </div>
-  </div>
+        <div id="hr-admin-panel" class="tab-panel">
+          <h2>HR Administration</h2>
 
-  <div id="analytics-status" class="status-message"></div>
+          <div class="info-card" style="text-align: left; background-color: var(--status-info-bg); border-color: var(--status-info-text);">
+            <h3 style="margin-top: 0; font-size: 1rem; color: var(--status-info-text);">Pending Data Change Requests</h3>
+            <div id="hr-data-requests-list" style="max-height: 150px; overflow-y: auto; margin-top: 10px;">
+              <p class="text-color-secondary">Loading requests...</p>
+            </div>
+          </div>
 
-  <hr class="section-divider">
+          <hr class="section-divider">
 
-  <div id="command-center-stats" style="margin-bottom:30px;">
-      <div class="metric-card">
-          <span class="metric-title">Adherence</span>
-          <span class="metric-value" id="an-stat-adherence">--%</span>
-      </div>
-      <div class="metric-card">
-          <span class="metric-title">Shrinkage</span>
-          <span class="metric-value" id="an-stat-shrinkage">--%</span>
-      </div>
-      <div class="metric-card">
-          <span class="metric-title">Total Lateness</span>
-          <span class="metric-value" id="an-stat-lateness">0m</span>
-      </div>
-      <div class="metric-card">
-          <span class="metric-title">Worked Hours</span>
-          <span class="metric-value" id="an-stat-worked">0h</span>
-      </div>
-  </div>
+          <div class="form-container">
+            <h3>Employee PII Editor</h3>
+            <div class="form-group" style="display: flex; gap: 10px;">
+              <input type="text" id="hr-pii-search" placeholder="Search by Name or Email..." style="flex: 1;">
+              <button class="btn-primary" onclick="searchEmployeePII()">Search</button>
+            </div>
+            <div id="hr-pii-search-status" class="status-message"></div>
 
-  <h3 style="margin-bottom:15px;">Activity Timeline (Heatmap)</h3>
-  <div id="analytics-heatmap-container" class="request-list" style="min-height:200px;">
-      <p class="text-color-secondary">Select criteria and click "Generate Report" to view timeline.</p>
-  </div>
-</div>
+            <div id="hr-pii-form-container" style="display: none; margin-top: 20px; border-top: 1px solid var(--border-color); padding-top: 20px;">
+              <input type="hidden" id="hr-pii-empid">
+              <h4 id="hr-pii-header" style="color: var(--konecta-blue);"></h4>
+              
+              <div class="form-row">
+                <div class="form-group"><label>National ID</label><input type="text" id="hr-pii-natid"></div>
+                <div class="form-group"><label>Passport No.</label><input type="text" id="hr-pii-passport"></div>
+              </div>
+              <div class="form-row">
+                <div class="form-group"><label>Social Insurance</label><input type="text" id="hr-pii-social"></div>
+                <div class="form-group"><label>IBAN</label><input type="text" id="hr-pii-iban"></div>
+              </div>
+              <div class="form-row">
+                <div class="form-group"><label>Personal Email</label><input type="email" id="hr-pii-pemail"></div>
+                <div class="form-group"><label>Phone</label><input type="text" id="hr-pii-phone"></div>
+              </div>
+              <div class="form-row">
+                <div class="form-group"><label>Address</label><input type="text" id="hr-pii-address"></div>
+                <div class="form-group"><label>Marital Status</label>
+                  <select id="hr-pii-marital">
+                    <option value="Single">Single</option>
+                    <option value="Married">Married</option>
+                    <option value="Divorced">Divorced</option>
+                  </select>
+                </div>
+              </div>
+              <div class="form-row">
+                <div class="form-group"><label>Basic Salary</label><input type="number" id="hr-pii-basic"></div>
+                <div class="form-group"><label>Variable Pay</label><input type="number" id="hr-pii-variable"></div>
+              </div>
+
+              <button class="btn-primary" onclick="saveEmployeePII()">Save Changes</button>
+            </div>
+          </div>
+
+          <hr class="section-divider">
+
+          <div class="form-container">
+            <h3>Leave Balance Adjustment</h3>
+            <div class="form-group">
+              <label>Select User</label>
+              <div id="hr-balance-user-select-container"></div>
+            </div>
+            <div class="form-row">
+              <div class="form-group"><label>Type</label><select id="hr-balance-type"><option value="Annual">Annual</option><option value="Sick">Sick</option><option value="Casual">Casual</option></select></div>
+              <div class="form-group"><label>Amount (+/-)</label><input type="number" id="hr-balance-amount" step="0.5"></div>
+            </div>
+            <div class="form-group"><label>Reason</label><input type="text" id="hr-balance-reason"></div>
+            <button class="btn-primary" style="background-color: var(--konecta-yellow); color: #000;" onclick="submitHrBalanceAdjustment()">Adjust Balance</button>
+            <div id="hr-balance-status" class="status-message"></div>
+          </div>
+        </div>
+
+        <div id="overtime-panel" class="tab-panel">
+          <h2>Overtime & Day Off Management</h2>
+          
+          <div class="form-container">
+            <div style="display:flex; justify-content:space-between;">
+                <h3>Request / Assign Hours</h3>
+                <div id="ot-assign-toggle" style="display:none;">
+                    <label><input type="checkbox" id="ot-is-assignment" onchange="toggleOtAssignment()"> Assign to Agent</label>
+                </div>
+            </div>
+
+            <div id="ot-employee-select-wrapper" style="display:none; margin-bottom:15px; padding:10px; background:#f3f4f6; border-radius:6px;">
+                <div id="ot-employee-select-container"></div>
+            </div>
+
+            <div class="form-row">
+              <div class="form-group"><label>Date</label><input type="date" id="ot-req-date"></div>
+              <div class="form-group">
+                <label>Type</label>
+                <select id="ot-req-type">
+                  <option value="Post-Shift">Post-Shift (Stay Late)</option>
+                  <option value="Pre-Shift">Pre-Shift (Come Early)</option>
+                  <option value="Work Day Off">Work Day Off (Cancel Off)</option>
+                </select>
+              </div>
+            </div>
+            
+            <div class="form-row">
+              <div class="form-group"><label>Start</label><input type="time" id="ot-req-start"></div>
+              <div class="form-group"><label>End</label><input type="time" id="ot-req-end"></div>
+            </div>
+
+            <div class="form-group"><label>Reason</label><input type="text" id="ot-req-reason" placeholder="Reason..."></div>
+            <button class="btn-primary" onclick="submitOtRequest()">Submit</button>
+            <div id="ot-status" class="status-message"></div>
+          </div>
+
+          <hr class="section-divider">
+
+          <div style="display: flex; justify-content: space-between; align-items: flex-end; margin-bottom: 15px;">
+            <h3 style="margin: 0;">Request History</h3>
+            <div class="form-group" style="margin: 0; min-width: 180px;">
+                <label for="ot-filter-status" style="font-size: 0.8rem; margin-bottom: 4px;">Filter Status</label>
+                <select id="ot-filter-status" onchange="loadOvertimeRequests()" style="padding: 8px; border-radius: 6px; border: 1px solid var(--border-color); background: var(--card-bg); width: 100%;">
+                    <option value="Pending">⚡ Pending Actions</option>
+                    <option value="Approved">✅ Approved</option>
+                    <option value="Denied">❌ Denied</option>
+                    <option value="All">📂 All History</option>
+                </select>
+            </div>
+          </div>
+          <div id="ot-request-list" class="request-list">Loading...</div> 
+        </div>
+
+        <div id="offboarding-panel" class="tab-panel">
+          <h2>Offboarding & Exits</h2>
+          
+          <div id="offboard-initiate-section" class="form-container" style="margin-bottom:20px; border-color: #dc2626;">
+              <h3 style="color:#dc2626; margin-top:0;">⚠ Initiate Termination</h3>
+              <p class="text-color-secondary">Submit a request to terminate an employee. Requires HR Approval.</p>
+              <div class="form-row">
+                  <div class="form-group">
+                      <label>Select Employee</label>
+                      <div id="offboard-term-user-container"></div>
+                  </div>
+                  <div class="form-group"><label>Exit Date</label><input type="date" id="term-date"></div>
+              </div>
+              <div class="form-group"><label>Reason</label><textarea id="term-reason" rows="2"></textarea></div>
+              <button class="btn-danger" onclick="submitTermination()">Submit Termination</button>
+          </div>
+
+          <hr class="section-divider">
+
+          <div style="display:flex; justify-content:space-between; align-items:center;">
+              <h3>Request Queue</h3>
+              <button class="btn-secondary" onclick="loadOffboardingRequests()">Refresh</button>
+          </div>
+          <div id="offboarding-list" class="request-list">Loading...</div>
+        </div>
+
+        <div id="analytics-panel" class="tab-panel">
+          <h2>Enterprise Reports & Analytics</h2>
+          
+          <div class="form-container" style="display:flex; gap:15px; flex-wrap:wrap; align-items:flex-end; background:var(--input-bg);">
+              <div class="form-group" style="flex:1; min-width:200px;">
+                  <label>Select User</label>
+                  <div id="analytics-user-select-container"></div>
+              </div>
+
+              <div class="form-group">
+                  <label>From</label>
+                  <input type="date" id="an-start-date">
+              </div>
+              <div class="form-group">
+                  <label>To</label>
+                  <input type="date" id="an-end-date">
+              </div>
+
+              <div class="form-group" style="display: flex; gap: 10px;">
+                <button type="button" class="btn-primary" onclick="loadAnalyticsData()">Generate Report</button>
+                <button type="button" class="export-btn" onclick="downloadPayrollReport()">📥 Export CSV</button>
+              </div>
+          </div>
+
+          <div id="analytics-status" class="status-message"></div>
+
+          <hr class="section-divider">
+
+          <div id="command-center-stats" style="margin-bottom:30px;">
+              <div class="metric-card">
+                  <span class="metric-title">Adherence</span>
+                  <span class="metric-value" id="an-stat-adherence">--%</span>
+              </div>
+              <div class="metric-card">
+                  <span class="metric-title">Shrinkage</span>
+                  <span class="metric-value" id="an-stat-shrinkage">--%</span>
+              </div>
+              <div class="metric-card">
+                  <span class="metric-title">Total Lateness</span>
+                  <span class="metric-value" id="an-stat-lateness">0m</span>
+              </div>
+              <div class="metric-card">
+                  <span class="metric-title">Worked Hours</span>
+                  <span class="metric-value" id="an-stat-worked">0h</span>
+              </div>
+          </div>
+
+          <h3 style="margin-bottom:15px;">Activity Timeline (Heatmap)</h3>
+          <div id="analytics-heatmap-container" class="request-list" style="min-height:200px;">
+              <p class="text-color-secondary">Select criteria and click "Generate Report" to view timeline.</p>
+          </div>
+        </div>
         
-      </main> <!-- End #app-content -->
-      
-    </div> <!-- End .app-container -->
-
-    <!-- MODIFIED: Footer is now positioned by CSS/Flexbox -->
-    <footer>
+      </main> </div> <footer>
       <p>KOMPASS (Konecta Operations, Management & Personnel Self-Service) - Created by Fady Bekhet</p>
     </footer>
 
@@ -8962,19 +8848,20 @@ function saveScheduleChanges() {
 
 // --- SHIFT SWAP LOGIC ---
 
+
 function loadSwapData() {
-    // FIX: Get email from the hidden profile field instead of undefined 'currentUserEmail'
+    // FIX: Retrieve email directly from the hidden profile field to ensure it is populated
     const email = document.getElementById('prof-email').value; 
     
     if (!email) {
        // If profile hasn't loaded yet, retry in 500ms
+       console.log("Waiting for profile email to load swap data...");
        setTimeout(loadSwapData, 500);
        return;
     }
 
     google.script.run.withSuccessHandler(renderSwapUI).getSwapData(email);
 }
-
 function renderSwapUI(data) {
     // 1. Market
     const marketBody = document.getElementById('swapMarketBody');
@@ -9084,6 +8971,20 @@ function switchSwapTab(tabName) {
     if(tabName === 'market' || tabName === 'mySwaps' || tabName === 'approvals') {
         loadSwapData();
     }
+}
+
+// --- SCHEDULE SEARCH LOGIC ---
+function filterScheduleEditorTable() {
+  const input = document.getElementById("sched-table-search");
+  const filter = input.value.toLowerCase();
+  const tbody = document.getElementById("schedEditorBody");
+  const tr = tbody.getElementsByTagName("tr");
+
+  for (let i = 0; i < tr.length; i++) {
+    // Searches text across all columns in the row (Name, Date, etc.)
+    const textContent = tr[i].textContent || tr[i].innerText;
+    tr[i].style.display = textContent.toLowerCase().includes(filter) ? "" : "none";
+  }
 }
 
         // -----------------------------
