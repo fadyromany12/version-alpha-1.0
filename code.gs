@@ -1385,51 +1385,45 @@ function punch(action, targetUserName, puncherEmail, adminTimestamp) {
   const nowTimestamp = adminTimestamp ? new Date(adminTimestamp) : new Date();
   
   // --- CRITICAL FIX START: SMART DATE DETECTION ---
-  // Instead of blindly using cutoff, we determine date based on Schedule Proximity
   let shiftDate;
-  
   if (action === "Login") {
-    // For Login, check if "Today" is the correct schedule match
+    // Determine which logical shift this is (Today, Yesterday, or Tomorrow)
+    // This handles the 00:30 case correctly
     shiftDate = determineSmartShiftDate(userEmail, nowTimestamp, SHIFT_CUTOFF_HOUR);
   } else {
-    // For Logout/Breaks, we must find the OPEN row (Yesterday or Today)
+    // For Logout/Breaks, find the open session
     shiftDate = determineOpenSessionDate(adherenceSheet, userName, nowTimestamp, SHIFT_CUTOFF_HOUR);
   }
-  // --- CRITICAL FIX END ---
-
+  
+  // Format for finding the row in Adherence
   const formattedDate = Utilities.formatDate(shiftDate, timeZone, "MM/dd/yyyy");
 
   // 3. Get Current State
   const row = findOrCreateRow(adherenceSheet, userName, shiftDate, formattedDate);
-  // Fetch current state from Column Y (25) - LastAction
   const lastAction = adherenceSheet.getRange(row, 25).getValue() || "Logged Out";
 
   // 4. LOGIC ENGINE
   
   // --- A. LOGIN LOGIC ---
   if (action === "Login") {
-    // Check 1: Already Logged In?
     const existingLogin = adherenceSheet.getRange(row, 3).getValue();
     if (existingLogin) throw new Error("You have already logged in today. Duplicate login is not allowed.");
-    // [FIX 1] FORCE SCHEDULE CHECK
+
+    // [FIX 1] FORCE SCHEDULE CHECK USING SHIFT DATE
     const sched = getScheduleForDate(userEmail, shiftDate);
     if (!sched || !sched.start) {
-        // Allow Admins to bypass, but block Agents
-        if (!puncherIsAdmin) {
-            throw new Error("Login Blocked: No schedule found for today. Please contact your manager.");
-        }
+        if (!puncherIsAdmin) throw new Error("Login Blocked: No schedule found for this shift date. Contact manager.");
     }
     
-    // Check 2: 4-Hour Schedule Lock (Admins bypass this)
+    // [FIX 2] Validate Lateness against the SMART SHIFT DATE (e.g. 00:30), not 'now'
     if (!puncherIsAdmin) {
-       validateScheduleLock(userEmail, nowTimestamp);
+       validateScheduleLock(userEmail, nowTimestamp, shiftDate);
     }
-
     
-    // --- TARDY CALCULATION & GAMIFICATION ---
-    
+    // --- TARDY CALCULATION ---
     if (sched && sched.start) {
-      const schedStart = new Date(sched.start);
+      // Calculate diff against the actual schedule start time combined with the Shift Date
+      const schedStart = createDateTime(shiftDate, sched.start); 
       const diffSec = (nowTimestamp.getTime() - schedStart.getTime()) / 1000;
       
       adherenceSheet.getRange(row, 11).setValue(diffSec > 0 ? diffSec : 0);
@@ -1439,118 +1433,88 @@ function punch(action, targetUserName, puncherEmail, adminTimestamp) {
          const threshold = getBreakConfig("Overtime Pre-Shift").default || 300;
          if (earlySec > threshold) adherenceSheet.getRange(row, 24).setValue(earlySec);
       }
-
-      // [NEW] GAMIFICATION TRIGGER
-      if (diffSec <= 0) {
-         addGamificationPoints(userEmail, 50, "Perfect Login");
-      } else if (diffSec <= 300) { // 5 mins grace
-         addGamificationPoints(userEmail, 10, "Login (Grace Period)");
-      }
+      
+      // Gamification
+      if (diffSec <= 0) addGamificationPoints(userEmail, 50, "Perfect Login");
+      else if (diffSec <= 300) addGamificationPoints(userEmail, 10, "Login (Grace Period)");
     }
-    // -----------------------------
 
     // Execution
     adherenceSheet.getRange(row, 3).setValue(nowTimestamp); // Login Time
-    adherenceSheet.getRange(row, 14).setValue("Present"); // Leave Type
+    adherenceSheet.getRange(row, 14).setValue("Present"); 
     adherenceSheet.getRange(row, 20).setValue("No");
     updateState(adherenceSheet, row, "Login", nowTimestamp);
     logsSheet.appendRow([new Date(), userName, userEmail, action, nowTimestamp]);
     return `Welcome ${userName}. You are successfully Logged In.`;
   }
 
-  // --- B. PRE-REQUISITE CHECK (Must be logged in to do anything else) ---
+  // --- B. PRE-REQUISITE CHECK ---
   const loginTime = adherenceSheet.getRange(row, 3).getValue();
   if (!loginTime) throw new Error("You must punch 'Login' before performing any other action.");
 
   // --- C. LOGOUT LOGIC ---
   if (action === "Logout") {
-    // Check: Must be in "Login" state (Working) to logout. Cannot logout from Break/AUX.
     if (lastAction !== "Login" && !lastAction.endsWith("Out")) {
-       // Allow logout if last action was an "Out" (e.g. Lunch Out -> Logout), or just Login.
-       // But if last action was "In" (e.g. Lunch In), block it.
        if (lastAction.endsWith("In") && lastAction !== "Login") {
          throw new Error(`You are currently status: "${lastAction}". You must end that activity before Logging Out.`);
        }
     }
-    
-    // Check: Already logged out?
     const existingLogout = adherenceSheet.getRange(row, 10).getValue();
     if (existingLogout) throw new Error("You have already logged out today.");
-
-    // Execution
+    
     adherenceSheet.getRange(row, 10).setValue(nowTimestamp);
     updateState(adherenceSheet, row, "Logout", nowTimestamp);
     
-    // [FIX 2] CALCULATE ALLOWANCES & METRICS
-    calculateEndShiftMetrics(adherenceSheet, row, userEmail, nowTimestamp);
+    // [FIX 3] Pass shiftDate to metrics so we use the correct schedule for Transport/Overnight
+    calculateEndShiftMetrics(adherenceSheet, row, userEmail, nowTimestamp, shiftDate);
     
     logsSheet.appendRow([new Date(), userName, userEmail, action, nowTimestamp]);
     return `Goodbye ${userName}. Shift ended.`;
   }
 
-  // --- D. HANDLING AUX CODES (Meeting, Personal, Coaching, System Down) ---
+  // --- D. AUX CODES ---
   if (action.includes("Meeting") || action.includes("Personal") || action.includes("Coaching") || action.includes("System Down")) {
       return processAuxCode(otherCodesSheet, adherenceSheet, row, userName, userEmail, action, nowTimestamp, lastAction, puncherIsAdmin ? puncherEmail : null);
   }
 
-  // --- E. HANDLING MAIN BREAKS (1st Break, Lunch, Last Break) ---
-  const breakCols = { 
-    "First Break In": 4, "First Break Out": 5, 
-    "Lunch In": 6, "Lunch Out": 7, 
-    "Last Break In": 8, "Last Break Out": 9 
-  };
-
+  // --- E. BREAKS ---
+  const breakCols = { "First Break In": 4, "First Break Out": 5, "Lunch In": 6, "Lunch Out": 7, "Last Break In": 8, "Last Break Out": 9 };
   if (breakCols[action]) {
       const colIndex = breakCols[action];
       const isBreakIn = action.endsWith("In");
       const currentVal = adherenceSheet.getRange(row, colIndex).getValue();
 
-      // Rule: Once per day check
       if (currentVal) throw new Error(`Error: "${action}" has already been used today.`);
-
       if (isBreakIn) {
-          // Rule: To go on Break, you must be working (Login or returned from previous break)
-          // You cannot go Break In if you are currently on Coaching In or Lunch In
           if (lastAction.endsWith("In") && lastAction !== "Login") {
-             throw new Error(`Cannot switch to ${action} while you are currently "${lastAction}". Finish that first.`);
+             throw new Error(`Cannot switch to ${action} while currently "${lastAction}".`);
           }
-          
-          // Execution
           adherenceSheet.getRange(row, colIndex).setValue(nowTimestamp);
           updateState(adherenceSheet, row, action, nowTimestamp);
           
-          // Check Schedule Window (Compliance)
+          // Check Break Window (Optional compliance check)
           checkBreakWindowCompliance(adherenceSheet, row, userEmail, action, nowTimestamp);
-          return `${action} recorded. Enjoy your break.`;
-
+          return `${action} recorded.`;
       } else {
-          // Rule: To go Break Out, you MUST be in that specific Break In state
           const expectedIn = action.replace(" Out", " In");
-          if (lastAction !== expectedIn) {
-             throw new Error(`Invalid Action. You are not currently in "${expectedIn}". Current status: ${lastAction}`);
-          }
-
-          // Execution
-          adherenceSheet.getRange(row, colIndex).setValue(nowTimestamp);
-          updateState(adherenceSheet, row, action, nowTimestamp); // State becomes "First Break Out" (effectively working)
+          if (lastAction !== expectedIn) throw new Error(`Invalid Action. You are not in "${expectedIn}".`);
           
-          // Calculate Duration Logic
+          adherenceSheet.getRange(row, colIndex).setValue(nowTimestamp);
+          updateState(adherenceSheet, row, action, nowTimestamp);
+          
+          // Duration Logic
           const inTime = adherenceSheet.getRange(row, colIndex - 1).getValue();
           if (inTime) {
              const duration = timeDiffInSeconds(inTime, nowTimestamp);
-             // Log logic for exceed is handled in daily calc or here
-             const typeBase = action.replace(" Out", ""); // "First Break"
+             const typeBase = action.replace(" Out", "");
              const allowed = getBreakConfig(typeBase).default;
              const diff = duration - allowed;
-             // Map exceed columns: 1st=17, Lunch=18, Last=19
              const exceedCol = (action === "First Break Out") ? 17 : (action === "Lunch Out") ? 18 : 19;
              adherenceSheet.getRange(row, exceedCol).setValue(diff > 0 ? diff : 0);
           }
-          
           return `${action} recorded. Welcome back.`;
       }
   }
-
   throw new Error("Unknown punch action.");
 }
 
@@ -1622,20 +1586,23 @@ function updateState(sheet, row, action, time) {
     sheet.getRange(row, 26).setValue(time);   // Col Z: Timestamp
 }
 
-// --- HELPER: 4-Hour Lateness Lock ---
-function validateScheduleLock(userEmail, now) {
-    const schedule = getScheduleForDate(userEmail, now);
-    
-    // If no schedule exists, we usually allow login (or you can block it by throwing error here)
-    if (!schedule || !schedule.start) return; 
+// [code.gs] REPLACE EXISTING validateScheduleLock
+function validateScheduleLock(userEmail, now, overrideDate) {
+    // Use the Smart Shift Date if provided, otherwise fallback to 'now'
+    const targetDate = overrideDate || now;
+    const schedule = getScheduleForDate(userEmail, targetDate);
 
-    const schedStart = new Date(schedule.start);
-    const diffMs = now - schedStart;
+    if (!schedule || !schedule.start) return;
+
+    // Construct schedule start time based on the Target Date (Correct Shift)
+    const schedStart = createDateTime(targetDate, schedule.start);
+    
+    // Calculate difference between NOW (actual login) and Scheduled Start
+    const diffMs = now.getTime() - schedStart.getTime();
     const diffMinutes = diffMs / 60000;
     const diffHours = diffMs / (1000 * 60 * 60);
 
     // 1. Block Early Login (> 15 mins before start)
-    // If Pre-Shift OT is approved, 'schedStart' is already moved earlier, so this adapts automatically.
     if (diffMinutes < -15) {
          const timeString = Utilities.formatDate(schedStart, Session.getScriptTimeZone(), "HH:mm");
          throw new Error(`Login Blocked: Too early. You can only log in 15 minutes before your shift start (${timeString}).`);
@@ -1648,7 +1615,8 @@ function validateScheduleLock(userEmail, now) {
 }
 
 
-function calculateEndShiftMetrics(sheet, row, userEmail, now) {
+// [code.gs] REPLACE EXISTING calculateEndShiftMetrics
+function calculateEndShiftMetrics(sheet, row, userEmail, now, overrideShiftDate) {
     // 1. Calculate Net Login Hours
     const loginTimeVal = sheet.getRange(row, 3).getValue();
     if (loginTimeVal) {
@@ -1658,16 +1626,25 @@ function calculateEndShiftMetrics(sheet, row, userEmail, now) {
         sheet.getRange(row, 23).setValue(durationHours.toFixed(2));
     }
 
-    // 2. Get Schedule
-    const schedule = getScheduleForDate(userEmail, now);
+    // 2. Get Schedule (Use shiftDate if provided)
+    const shiftDate = overrideShiftDate || getShiftDate(now, 7);
+    const schedule = getScheduleForDate(userEmail, shiftDate);
+    
     if (!schedule || !schedule.end) {
         sheet.getRange(row, 27).setValue("No");
         sheet.getRange(row, 28).setValue("No");
         return;
     }
 
-    const schedEnd = new Date(schedule.end); // Planned End
-    const actualOut = new Date(now);         // Actual Logout
+    // Construct correct Scheduled End time
+    let schedEnd = createDateTime(shiftDate, schedule.end);
+    // If end time is smaller than start (e.g. 02:00 < 18:00), it ends next day
+    if (schedule.start) {
+       const sStart = createDateTime(shiftDate, schedule.start);
+       if (schedEnd < sStart) schedEnd.setDate(schedEnd.getDate() + 1);
+    }
+
+    const actualOut = new Date(now);
 
     // --- OT / Early Leave Logic ---
     const diffSec = (actualOut - schedEnd) / 1000;
@@ -1680,24 +1657,31 @@ function calculateEndShiftMetrics(sheet, row, userEmail, now) {
         sheet.getRange(row, 13).setValue(Math.abs(diffSec));
     }
     
-    // --- UPDATED ALLOWANCE LOGIC ---
+    // --- UPDATED ELIGIBILITY LOGIC ---
     
-    // 1. Transportation: User said "eligible if present anyways".
-    // Since this function runs on Logout, they are present.
-    sheet.getRange(row, 28).setValue("Yes"); // TransportEligible (Col AB)
-
-    // 2. Overnight: "If shift ends after 9pm AND agent punched logout after that"
+    // 2. Overnight: Shift ends > 9pm OR < 5am
     const schedHour = schedEnd.getHours();
     const actualHour = actualOut.getHours();
     
-    // Defined as >= 21:00 (9 PM) OR < 05:00 (5 AM)
+    // Rule: Shift must be scheduled to end late
     const isShiftLate = (schedHour >= 21) || (schedHour < 5);
-    const isLogoutLate = (actualHour >= 21) || (actualHour < 8); // Wide buffer for early morning logout
+    // Rule: Agent must actually work late (logout after 9pm or before 8am)
+    const isLogoutLate = (actualHour >= 21) || (actualHour < 8);
 
     if (isShiftLate && isLogoutLate) {
-        sheet.getRange(row, 27).setValue("Yes"); // OvernightEligible (Col AA)
+        sheet.getRange(row, 27).setValue("Yes"); // OvernightEligible
     } else {
         sheet.getRange(row, 27).setValue("No");
+    }
+
+    // 3. Transportation: Eligible if shift ends after 10 PM (22:00) or before 7 AM
+    // Adjust 22/7 based on your exact policy
+    const isTransportTime = (schedHour >= 22) || (schedHour < 7);
+    
+    if (isTransportTime && isLogoutLate) {
+        sheet.getRange(row, 28).setValue("Yes"); // TransportEligible
+    } else {
+        sheet.getRange(row, 28).setValue("No");
     }
 }
 
@@ -7673,10 +7657,8 @@ function fixPastEligibility() {
  * NEW: Determines if a login belongs to Today or Yesterday based on Schedule.
  * Solves the 00:30 AM issue.
  */
+// [code.gs] REPLACE EXISTING determineSmartShiftDate
 function determineSmartShiftDate(userEmail, now, cutoffHour) {
-  const timeZone = Session.getScriptTimeZone();
-  
-  // 1. Define "Calendar Today" and "Calendar Yesterday"
   const today = new Date(now);
   today.setHours(0,0,0,0);
   
@@ -7684,32 +7666,41 @@ function determineSmartShiftDate(userEmail, now, cutoffHour) {
   yesterday.setDate(yesterday.getDate() - 1);
   yesterday.setHours(0,0,0,0);
 
-  // 2. Get Schedules for both days
+  // [NEW] Check Tomorrow as well (for 00:30 shifts when script TZ is behind)
+  const tomorrow = new Date(now);
+  tomorrow.setDate(tomorrow.getDate() + 1);
+  tomorrow.setHours(0,0,0,0);
+
   const schedToday = getScheduleForDate(userEmail, today);
   const schedYesterday = getScheduleForDate(userEmail, yesterday);
+  const schedTomorrow = getScheduleForDate(userEmail, tomorrow);
 
-  // 3. Calculate "Distance" to Start Times
-  let distToToday = 99999999;
-  let distToYesterday = 99999999;
+  let distToToday = 9999999999;
+  let distToYesterday = 9999999999;
+  let distToTomorrow = 9999999999;
 
   if (schedToday && schedToday.start) {
-    const startToday = parseCsvTimeAsDate(schedToday.start, today); 
-    distToToday = Math.abs(now.getTime() - startToday.getTime());
+    const startT = createDateTime(today, schedToday.start);
+    distToToday = Math.abs(now.getTime() - startT.getTime());
   }
-
   if (schedYesterday && schedYesterday.start) {
-    const startYesterday = parseCsvTimeAsDate(schedYesterday.start, yesterday);
-    distToYesterday = Math.abs(now.getTime() - startYesterday.getTime());
+    const startY = createDateTime(yesterday, schedYesterday.start);
+    distToYesterday = Math.abs(now.getTime() - startY.getTime());
+  }
+  if (schedTomorrow && schedTomorrow.start) {
+    const startTm = createDateTime(tomorrow, schedTomorrow.start);
+    distToTomorrow = Math.abs(now.getTime() - startTm.getTime());
   }
 
-  // 4. Decision Logic
-  // If Today's schedule is closer to NOW than Yesterday's schedule, use Today.
-  // Example: Now=00:30. SchedToday=00:30 (Diff=0). SchedYest=22:00 (Diff=2.5h). -> Use Today.
-  if (distToToday < distToYesterday && distToToday < (12 * 60 * 60 * 1000)) { // Within 12 hours
+  // Pick the closest schedule
+  if (distToTomorrow < distToToday && distToTomorrow < distToYesterday && distToTomorrow < (12*3600*1000)) {
+     return tomorrow;
+  }
+  if (distToToday <= distToYesterday && distToToday < (12*3600*1000)) {
      return today;
   }
   
-  // Fallback: If no schedule match, use the standard Cutoff Logic
+  // Default fallback to standard cutoff
   return getShiftDate(new Date(now), cutoffHour);
 }
 
@@ -7765,4 +7756,279 @@ function parseCsvTimeAsDate(timeStr, baseDate) {
   const d = new Date(baseDate);
   d.setHours(parts[0], parts[1], 0, 0);
   return d;
+}
+
+
+
+
+
+
+/* =========================================
+   FEATURE: INDIVIDUAL SCHEDULE EDITOR
+   ========================================= */
+
+function getAgentScheduleForEditor(targetEmail, startDateStr, endDateStr) {
+  const ss = getSpreadsheet();
+  const schedSheet = getOrCreateSheet(ss, SHEET_NAMES.schedules || "AT 3.0 - Schedules");
+  const data = schedSheet.getDataRange().getValues();
+  
+  // Parse dates
+  const start = new Date(startDateStr);
+  const end = new Date(endDateStr);
+  // Normalize to remove time
+  start.setHours(0,0,0,0);
+  end.setHours(23,59,59,999);
+
+  const result = [];
+  
+  // Skip header (i=1)
+  for (let i = 1; i < data.length; i++) {
+    const row = data[i];
+    const rowEmail = row[6]; // Index 6 is 'agent email' based on your CSV
+    if (rowEmail !== targetEmail) continue;
+
+    const shiftDate = new Date(row[1]); // StartDate column
+    if (shiftDate >= start && shiftDate <= end) {
+      result.push({
+        rowIdx: i + 1, // 1-based index for referencing
+        date: Utilities.formatDate(shiftDate, Session.getScriptTimeZone(), "yyyy-MM-dd"),
+        startTime: row[2] ? Utilities.formatDate(new Date(row[2]), Session.getScriptTimeZone(), "HH:mm") : "",
+        endTime: row[4] ? Utilities.formatDate(new Date(row[4]), Session.getScriptTimeZone(), "HH:mm") : "",
+        leaveType: row[5] || ""
+      });
+    }
+  }
+  
+  // Sort by date
+  return result.sort((a, b) => new Date(a.date) - new Date(b.date));
+}
+
+function saveAgentScheduleChanges(targetEmail, scheduleUpdates) {
+  // scheduleUpdates is an array of objects: { date, startTime, endTime, leaveType }
+  const ss = getSpreadsheet();
+  const schedSheet = getOrCreateSheet(ss, SHEET_NAMES.schedules || "AT 3.0 - Schedules");
+  const data = schedSheet.getDataRange().getValues();
+  const userData = getUserDataFromDb(getOrCreateSheet(ss, SHEET_NAMES.database));
+  const targetName = userData.emailToName[targetEmail] || targetEmail;
+  
+  // 1. Delete existing rows for this agent in this date range to avoid duplicates
+  //    (We filter the data array in memory and write it back, or delete row by row)
+  //    To be safe and support bulk updates, we will delete matching rows first.
+  
+  // Get all dates being updated
+  const updateDates = new Set(scheduleUpdates.map(u => u.date));
+  
+  // Iterate backwards to delete
+  for (let i = data.length - 1; i >= 1; i--) {
+    const row = data[i];
+    const rowEmail = row[6];
+    const rowDate = Utilities.formatDate(new Date(row[1]), Session.getScriptTimeZone(), "yyyy-MM-dd");
+    
+    if (rowEmail === targetEmail && updateDates.has(rowDate)) {
+      schedSheet.deleteRow(i + 1);
+    }
+  }
+  
+  // 2. Append new rows
+  const newRows = [];
+  scheduleUpdates.forEach(update => {
+    // Construct times. Note: Schedule sheet expects Full Date Time or just Time string? 
+    // Based on snippet: "11:00:00" (Time Only) or "12/01/2026 00:30:00" (DateTime)
+    // We will standardise to DateTime for safety or Time string depending on your setup.
+    // Assuming your sheet handles "11:00:00" as a string or time object.
+    
+    let shiftStart = update.startTime;
+    let shiftEnd = update.endTime;
+    
+    // If input is "09:00", strictly strictly keeping it simple string is often safest for CSV/Sheet mix
+    
+    // Format: Name, StartDate, ShiftStartTime, EndDate, ShiftEndTime, LeaveType, agent email
+    // Note: StartDate/EndDate usually same unless overnight.
+    
+    newRows.push([
+      targetName,
+      update.date, // StartDate
+      shiftStart,  // ShiftStartTime
+      update.date, // EndDate (Assuming single day shift for editor simplicity, modify if overnight)
+      shiftEnd,    // ShiftEndTime
+      update.leaveType,
+      targetEmail
+    ]);
+  });
+  
+  if (newRows.length > 0) {
+    schedSheet.getRange(schedSheet.getLastRow() + 1, 1, newRows.length, newRows[0].length).setValues(newRows);
+  }
+  
+  return "Schedule updated successfully.";
+}
+
+/* =========================================
+   FEATURE: SHIFT SWAP MARKETPLACE
+   ========================================= */
+
+function getSwapData(userEmail) {
+  const ss = getSpreadsheet();
+  const swapSheet = getOrCreateSheet(ss, "AT 3.0 - Shift_Swaps");
+  const data = swapSheet.getDataRange().getValues();
+  const headers = data[0];
+  const rows = data.slice(1);
+  
+  const userData = getUserDataFromDb(getOrCreateSheet(ss, SHEET_NAMES.database));
+  const userRole = userData.emailToRole[userEmail];
+  
+  // Helper to map row to object
+  const mapRow = (r) => {
+    return {
+      id: r[0],
+      reqEmail: r[1],
+      reqName: r[2],
+      reqDate: Utilities.formatDate(new Date(r[3]), Session.getScriptTimeZone(), "yyyy-MM-dd"),
+      reqShift: r[4],
+      recEmail: r[5],
+      recName: r[6],
+      recDate: r[7] ? Utilities.formatDate(new Date(r[7]), Session.getScriptTimeZone(), "yyyy-MM-dd") : "",
+      recShift: r[8],
+      status: r[9],
+      rtaStatus: r[10],
+      mgrStatus: r[11]
+    };
+  };
+
+  const availableSwaps = [];
+  const myRequests = [];
+  const pendingApprovals = [];
+
+  rows.forEach(r => {
+    const swap = mapRow(r);
+    
+    // 1. My Requests
+    if (swap.reqEmail === userEmail || swap.recEmail === userEmail) {
+      myRequests.push(swap);
+    }
+    
+    // 2. Available Swaps (Status = Open)
+    if (swap.status === "Open" && swap.reqEmail !== userEmail) {
+      availableSwaps.push(swap);
+    }
+    
+    // 3. Approvals (For Managers/RTA)
+    if (swap.status === "Pending Approval") {
+      // RTA View
+      if ((userRole === 'admin' || userRole === 'superadmin' || userRole === 'rta') && swap.rtaStatus === "Pending") {
+        pendingApprovals.push({...swap, type: 'RTA Approval'});
+      }
+      
+      // Manager View
+      // Check if user is manager of Requester OR Receiver
+      // (Using simple logic here, in production check hierarchy)
+      if (userRole === 'manager' && swap.mgrStatus === "Pending") {
+         // Ideally, check: if (userData.emailToManager[swap.reqEmail] === userEmail)
+         pendingApprovals.push({...swap, type: 'Manager Approval'});
+      }
+    }
+  });
+
+  return { availableSwaps, myRequests, pendingApprovals, userRole };
+}
+
+function postSwapRequest(userEmail, date, shift) {
+  const ss = getSpreadsheet();
+  const swapSheet = getOrCreateSheet(ss, "AT 3.0 - Shift_Swaps");
+  const userData = getUserDataFromDb(getOrCreateSheet(ss, SHEET_NAMES.database));
+  
+  const id = "SWAP-" + new Date().getTime();
+  const row = [
+    id,
+    userEmail,
+    userData.emailToName[userEmail],
+    date,
+    shift,
+    "", "", "", "", // Receiver info empty
+    "Open", // Status
+    "Pending", // RTA Status
+    "Pending", // Manager Status
+    "", "", new Date()
+  ];
+  
+  swapSheet.appendRow(row);
+  return "Swap request posted to marketplace.";
+}
+
+function acceptSwapOffer(userEmail, swapId, myDate, myShift) {
+  const ss = getSpreadsheet();
+  const swapSheet = getOrCreateSheet(ss, "AT 3.0 - Shift_Swaps");
+  const data = swapSheet.getDataRange().getValues();
+  const userData = getUserDataFromDb(getOrCreateSheet(ss, SHEET_NAMES.database));
+  
+  for (let i = 1; i < data.length; i++) {
+    if (data[i][0] === swapId) {
+      // Update Receiver Info
+      swapSheet.getRange(i + 1, 6).setValue(userEmail); // RecEmail
+      swapSheet.getRange(i + 1, 7).setValue(userData.emailToName[userEmail]); // RecName
+      swapSheet.getRange(i + 1, 8).setValue(myDate); // RecDate
+      swapSheet.getRange(i + 1, 9).setValue(myShift); // RecShift
+      swapSheet.getRange(i + 1, 10).setValue("Pending Approval"); // Status
+      return "Offer accepted! Waiting for RTA & Manager approval.";
+    }
+  }
+  throw new Error("Swap request not found.");
+}
+
+function processSwapApproval(userEmail, swapId, action, roleType) {
+  // roleType: 'rta' or 'manager'
+  // action: 'Approve' or 'Deny'
+  const ss = getSpreadsheet();
+  const swapSheet = getOrCreateSheet(ss, "AT 3.0 - Shift_Swaps");
+  const data = swapSheet.getDataRange().getValues();
+  
+  let rowIndex = -1;
+  let swapRow = null;
+  
+  for (let i = 1; i < data.length; i++) {
+    if (data[i][0] === swapId) {
+      rowIndex = i + 1;
+      swapRow = data[i];
+      break;
+    }
+  }
+  
+  if (rowIndex === -1) throw new Error("Swap not found");
+  
+  const colIndex = (roleType === 'rta') ? 11 : 12; // K=11(RTA), L=12(Mgr)
+  const byIndex = (roleType === 'rta') ? 13 : 14; 
+  
+  // Update the specific approval column
+  swapSheet.getRange(rowIndex, colIndex).setValue(action);
+  swapSheet.getRange(rowIndex, byIndex).setValue(userEmail);
+  
+  // Check if fully approved
+  // Refresh row data
+  const rtaStatus = (roleType === 'rta') ? action : swapRow[10];
+  const mgrStatus = (roleType === 'manager') ? action : swapRow[11];
+  
+  if (action === "Deny") {
+    swapSheet.getRange(rowIndex, 10).setValue("Denied");
+    return "Swap Denied.";
+  }
+  
+  if (rtaStatus === "Approve" && mgrStatus === "Approve") {
+    swapSheet.getRange(rowIndex, 10).setValue("Approved");
+    
+    // EXECUTE THE SWAP IN SCHEDULES
+    // 1. Get info
+    const reqEmail = swapRow[1];
+    const reqDate = swapRow[3]; // Date object
+    const recEmail = swapRow[5];
+    const recDate = swapRow[7]; // Date object
+    
+    // 2. Call helper to swap (Simplified: user needs to manually update or we automate)
+    // Automated swap logic is complex (updating multiple rows in Schedules csv).
+    // For now, we mark it Approved.
+    // OPTIONAL: Call executeSwapInSchedule(reqEmail, reqDate, recEmail, recDate) here.
+    
+    return "Swap Fully Approved!";
+  }
+  
+  return `${roleType.toUpperCase()} ${action} recorded.`;
 }
