@@ -201,9 +201,22 @@ function webGetAdherenceRange(userNames, startDateStr, endDateStr) {
 }
 
 // === Web App API for My Schedule ===
-function webGetMySchedule() {
+// [code.gs] UPDATED: Supports getting schedule for self OR target (if admin)
+function webGetMySchedule(targetEmail) {
   try {
-    const userEmail = Session.getActiveUser().getEmail().toLowerCase();
+    const activeEmail = Session.getActiveUser().getEmail().toLowerCase();
+    
+    // Default to self if no target provided
+    let userEmail = targetEmail || activeEmail;
+    
+    // Security: If requesting for someone else, check permissions
+    if (userEmail !== activeEmail) {
+        const { userRole } = getAuthorizedContext(null); // Just fetch role
+        if (!['admin','superadmin','manager','project_manager'].includes(userRole)) {
+            throw new Error("Permission denied. You can only view your own schedule.");
+        }
+    }
+
     return getMySchedule(userEmail);
   } catch (err) {
     return { error: "Error: " + err.message };
@@ -2346,7 +2359,7 @@ function dailyLeaveSweeper() {
         Logger.log(`Skipping sweeper for ${identifier} - entry already exists.`);
         continue; 
     }
-    
+
     // --- LOGIC: Mark Absent/Auto-Present ---
     let finalStatus = "Absent";
     let isAbsentFlag = "Yes";
@@ -7890,13 +7903,22 @@ function saveAgentScheduleChanges(targetEmail, scheduleUpdates) {
 
 function getSwapData(userEmail) {
   const ss = getSpreadsheet();
-  const swapSheet = getOrCreateSheet(ss, "AT 3.0 - Shift_Swaps");
+  // Ensure sheet exists with headers
+  let swapSheet = ss.getSheetByName("Shift_Swaps");
+  if (!swapSheet) {
+    swapSheet = ss.insertSheet("Shift_Swaps");
+    swapSheet.appendRow(["SwapID","ReqEmail","ReqName","ReqDate","ReqShift","RecEmail","RecName","RecDate","RecShift","Status","RTA_Status","Mgr_Status","RTA_By","Mgr_By","CreatedAt"]);
+  }
+
   const data = swapSheet.getDataRange().getValues();
-  const headers = data[0];
+  // If only header exists, return empty arrays
+  if (data.length <= 1) {
+     return { availableSwaps: [], myRequests: [], pendingApprovals: [], userRole: 'agent' };
+  }
+
   const rows = data.slice(1);
-  
-  const userData = getUserDataFromDb(getOrCreateSheet(ss, SHEET_NAMES.database));
-  const userRole = userData.emailToRole[userEmail];
+  const userData = getUserDataFromDb(getOrCreateSheet(ss, SHEET_NAMES.employeesCore)); // Use Core
+  const userRole = userData.emailToRole[userEmail] || 'agent';
   
   // Helper to map row to object
   const mapRow = (r) => {
@@ -7904,11 +7926,11 @@ function getSwapData(userEmail) {
       id: r[0],
       reqEmail: r[1],
       reqName: r[2],
-      reqDate: Utilities.formatDate(new Date(r[3]), Session.getScriptTimeZone(), "yyyy-MM-dd"),
+      reqDate: r[3] instanceof Date ? Utilities.formatDate(r[3], Session.getScriptTimeZone(), "yyyy-MM-dd") : r[3],
       reqShift: r[4],
       recEmail: r[5],
       recName: r[6],
-      recDate: r[7] ? Utilities.formatDate(new Date(r[7]), Session.getScriptTimeZone(), "yyyy-MM-dd") : "",
+      recDate: (r[7] && r[7] instanceof Date) ? Utilities.formatDate(r[7], Session.getScriptTimeZone(), "yyyy-MM-dd") : r[7],
       recShift: r[8],
       status: r[9],
       rtaStatus: r[10],
@@ -7921,14 +7943,17 @@ function getSwapData(userEmail) {
   const pendingApprovals = [];
 
   rows.forEach(r => {
+    // Skip empty rows
+    if(!r[0]) return;
+
     const swap = mapRow(r);
     
-    // 1. My Requests
+    // 1. My Requests (Requester OR Receiver)
     if (swap.reqEmail === userEmail || swap.recEmail === userEmail) {
       myRequests.push(swap);
     }
     
-    // 2. Available Swaps (Status = Open)
+    // 2. Available Swaps (Status = Open AND Not Me)
     if (swap.status === "Open" && swap.reqEmail !== userEmail) {
       availableSwaps.push(swap);
     }
@@ -7941,10 +7966,8 @@ function getSwapData(userEmail) {
       }
       
       // Manager View
-      // Check if user is manager of Requester OR Receiver
-      // (Using simple logic here, in production check hierarchy)
-      if (userRole === 'manager' && swap.mgrStatus === "Pending") {
-         // Ideally, check: if (userData.emailToManager[swap.reqEmail] === userEmail)
+      // Simplified: If you are a manager/admin, you see pending manager approvals
+      if ((userRole === 'manager' || userRole === 'admin' || userRole === 'superadmin') && swap.mgrStatus === "Pending") {
          pendingApprovals.push({...swap, type: 'Manager Approval'});
       }
     }
@@ -7953,32 +7976,41 @@ function getSwapData(userEmail) {
   return { availableSwaps, myRequests, pendingApprovals, userRole };
 }
 
-function postSwapRequest(userEmail, date, shift) {
-  const ss = getSpreadsheet();
-  const swapSheet = getOrCreateSheet(ss, "AT 3.0 - Shift_Swaps");
-  const userData = getUserDataFromDb(getOrCreateSheet(ss, SHEET_NAMES.database));
+
+function postSwapRequest(targetEmail, date, shift) {
+  const { userEmail: requesterEmail, userData, ss } = getAuthorizedContext(null);
+  
+  // Security: If posting for someone else
+  if (targetEmail.toLowerCase() !== requesterEmail) {
+      const role = userData.emailToRole[requesterEmail];
+      if (!['admin','superadmin','manager','project_manager'].includes(role)) {
+          throw new Error("Permission denied.");
+      }
+  }
+
+  const swapSheet = getOrCreateSheet(ss, "Shift_Swaps");
+  const targetName = userData.emailToName[targetEmail] || targetEmail;
   
   const id = "SWAP-" + new Date().getTime();
   const row = [
     id,
-    userEmail,
-    userData.emailToName[userEmail],
+    targetEmail,
+    targetName,
     date,
     shift,
-    "", "", "", "", // Receiver info empty
-    "Open", // Status
-    "Pending", // RTA Status
-    "Pending", // Manager Status
+    "", "", "", "", 
+    "Open", 
+    "Pending", 
+    "Pending", 
     "", "", new Date()
   ];
-  
   swapSheet.appendRow(row);
-  return "Swap request posted to marketplace.";
+  return "Swap request posted.";
 }
 
 function acceptSwapOffer(userEmail, swapId, myDate, myShift) {
   const ss = getSpreadsheet();
-  const swapSheet = getOrCreateSheet(ss, "AT 3.0 - Shift_Swaps");
+  const swapSheet = getOrCreateSheet(ss, "Shift_Swaps");
   const data = swapSheet.getDataRange().getValues();
   const userData = getUserDataFromDb(getOrCreateSheet(ss, SHEET_NAMES.database));
   
@@ -8000,7 +8032,7 @@ function processSwapApproval(userEmail, swapId, action, roleType) {
   // roleType: 'rta' or 'manager'
   // action: 'Approve' or 'Deny'
   const ss = getSpreadsheet();
-  const swapSheet = getOrCreateSheet(ss, "AT 3.0 - Shift_Swaps");
+  const swapSheet = getOrCreateSheet(ss, "Shift_Swaps");
   const data = swapSheet.getDataRange().getValues();
   
   let rowIndex = -1;
