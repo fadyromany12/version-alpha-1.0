@@ -2108,6 +2108,7 @@ body.dark-mode .status-offline { background-color: #374151; color: #9ca3af; }
                 <div class="form-group">
                   <label>Select Agent</label>
                   <div id="sched-edit-email-container"></div> 
+                  <input type="hidden" id="schedEditEmail"> 
                 </div>
                 <div class="form-group"><label>From</label><input type="date" id="schedEditStart"></div>
                 <div class="form-group"><label>To</label><input type="date" id="schedEditEnd"></div>
@@ -2116,8 +2117,9 @@ body.dark-mode .status-offline { background-color: #374151; color: #9ca3af; }
             </div>
             
             <div class="form-group" style="margin-top: 20px;">
-              <label style="font-weight: 600; color: var(--konecta-blue);">Search Agent in Loaded List</label>
-              <input type="text" id="sched-table-search" placeholder="Type name to filter rows..." 
+              <label style="font-weight: 600; color: var(--konecta-blue);">Search within loaded results</label>
+              <small style="display:block; color:#666; margin-bottom:5px;">This filters the rows displayed in the table below (e.g., search for 'Annual').</small>
+              <input type="text" id="sched-table-search" placeholder="Type to filter rows..." 
                      onkeyup="filterScheduleEditorTable()" 
                      style="width: 100%; padding: 10px; border-radius: 6px; border: 1px solid var(--border-color); background: var(--input-bg); color: var(--text-color);">
             </div>
@@ -2137,41 +2139,54 @@ body.dark-mode .status-offline { background-color: #374151; color: #9ca3af; }
               <br>
               <button type="button" class="btn-primary" onclick="saveScheduleChanges()">Save Changes</button>
             </div>
-          </div>
-        </div> 
-
+          </div></div>
+          
         <div id="shift-swaps-panel" class="tab-panel">
-          <h2>Shift Swap Marketplace</h2>
+  <h2>Shift Swap Marketplace</h2>
+  
+  <div class="button-group">
+      <button class="btn-secondary active" onclick="switchSwapTab('market')">Marketplace</button>
+      <button class="btn-secondary" onclick="switchSwapTab('mySwaps')">My Requests</button>
+      <button class="btn-secondary" onclick="switchSwapTab('approvals')" id="swapApproveBtn">Approvals</button>
+  </div>
+  
+  <div id="swap-market" class="swap-view" style="margin-top:20px;">
+      <div class="form-container" style="margin-bottom: 20px; border-left: 4px solid var(--konecta-blue);">
+          <h3>Post a Swap Request</h3>
           
-          <div class="button-group">
-              <button class="btn-secondary active" onclick="switchSwapTab('market')">Marketplace</button>
-              <button class="btn-secondary" onclick="switchSwapTab('mySwaps')">My Requests</button>
-              <button class="btn-secondary" onclick="switchSwapTab('approvals')" id="swapApproveBtn">Approvals</button>
+          <div id="swap-manager-area" style="display:none; margin-bottom: 15px;">
+              <label style="color: var(--text-color-secondary); font-size: 0.85rem;">Post on behalf of:</label>
+              <div id="swap-proxy-user-container"></div> 
           </div>
-          
-          <div id="swap-market" class="swap-view" style="margin-top:20px;">
-              <div class="form-container" style="margin-bottom: 20px;">
-                  <h3>Post a Request</h3>
-                  <div class="form-row">
-                      <div class="form-group"><label>Date to Swap</label><input type="date" id="swapPostDate"></div>
-                      <div class="form-group"><label>Current Shift Time</label><input type="text" id="swapPostShift" placeholder="e.g. 09:00 - 18:00"></div>
-                  </div>
-                  <button class="btn-primary" onclick="postSwapRequest()">Post to Market</button>
+
+          <div class="form-row">
+              <div class="form-group" style="flex: 2;">
+                  <label>Select Shift to Swap</label>
+                  <select id="swapSourceShift">
+                      <option value="">-- Loading your schedule... --</option>
+                  </select>
               </div>
-              <h3>Available Swaps</h3>
-              <div id="swapMarketBody" class="request-list">Loading...</div>
+              <div class="form-group" style="flex: 1; display: flex; align-items: flex-end;">
+                  <button class="btn-primary" onclick="postSwapRequest()" style="width: 100%;">Post to Market</button>
+              </div>
           </div>
+          <small class="text-color-secondary">Select one of your upcoming "Present" shifts to offer.</small>
+      </div>
 
-          <div id="swap-mySwaps" class="swap-view" style="display:none; margin-top:20px;">
-              <h3>My Swap History</h3>
-              <div id="mySwapsBody" class="request-list">Loading...</div>
-          </div>
+      <h3>Available Swaps</h3>
+      <div id="swapMarketBody" class="request-list">Loading...</div>
+  </div>
 
-          <div id="swap-approvals" class="swap-view" style="display:none; margin-top:20px;">
-              <h3>Pending Approvals</h3>
-              <div id="swapApprovalsBody" class="request-list">Loading...</div>
-          </div>
-        </div>
+  <div id="swap-mySwaps" class="swap-view" style="display:none; margin-top:20px;">
+      <h3>My Swap History</h3>
+      <div id="mySwapsBody" class="request-list">Loading...</div>
+  </div>
+
+  <div id="swap-approvals" class="swap-view" style="display:none; margin-top:20px;">
+      <h3>Pending Approvals</h3>
+      <div id="swapApprovalsBody" class="request-list">Loading...</div>
+  </div>
+</div>
         
         <div id="leave-approval-panel" class="tab-panel">
           <h2>Leave Request Management</h2>
@@ -3129,9 +3144,27 @@ function showTab(tabName) {
     } else if (tabName === 'analytics') {
       loadAnalyticsTab();
     } else if (tabName === 'schedule') {
-      // Populate the NEW editor dropdown
-      populateAdminDropdown(allUsersList, selfUserName, 'sched-edit-email', 'Select Agent');
+      // --- FIX: Use 'schedEditEmail' to match the mapping and the input ID ---
+      populateAdminDropdown(allUsersList, selfUserName, 'schedEditEmail', 'Select Agent');
     } else if (tabName === 'shift-swaps') {
+      // Logic: If Admin/Manager, show the proxy dropdown
+      if (['admin','superadmin','manager','project_manager','rta'].includes(selfRole)) {
+         document.getElementById('swap-manager-area').style.display = 'block';
+         // Populate if empty
+         if(document.getElementById('swap-proxy-user-container').innerHTML === "") {
+             populateAdminDropdown(allUsersList, selfUserName, 'swap-proxy-user', 'Select Agent (Manager Mode)');
+             
+             // Add listener: When manager changes user, reload schedule dropdown
+             setTimeout(() => {
+                 const drop = document.getElementById('swap-proxy-user');
+                 if(drop) {
+                     // We need a way to detect change on the hidden input created by populateAdminDropdown. 
+                     // The easiest way is to modify populateSwapShiftDropdown to read it.
+                     // Or just rely on the user clicking "Marketplace" button to refresh.
+                 }
+             }, 1000);
+         }
+      }
       loadSwapData();
     }
   }
@@ -3393,11 +3426,16 @@ function populateAdminDropdown(users, selfName, dropdownId, selfText, defaultVal
     'offboard-user-select': 'offboard-user-select-container',
     'hr-balance-user-select': 'hr-balance-user-select-container',
     'hr-offboard-user-select': 'hr-offboard-user-select-container',
-    'ot-employee-select': 'ot-employee-select-container', // 
-    'offboard-term-user': 'offboard-term-user-container', // 
+    'ot-employee-select': 'ot-employee-select-container',
+    'offboard-term-user': 'offboard-term-user-container',
     'reporting-line-pm': 'reporting-line-pm-container',
     'finance-apply': 'fin-apply-users-container',
-    'analytics-user': 'analytics-user-select-container'
+    'analytics-user': 'analytics-user-select-container',
+    
+    // --- THIS IS THE FIX ---
+    'schedEditEmail': 'sched-edit-email-container',
+    'swap-proxy-user': 'swap-proxy-user-container' // Also adding this for the Swap tab manager fix
+    // -----------------------
   };
 
   if (dropdownId === 'analytics-user') {
@@ -8796,19 +8834,42 @@ function renderLeaderboard(data) {
         // --- SCHEDULE EDITOR LOGIC ---
 
 function loadAgentSchedule() {
-    const email = document.getElementById('schedEditEmail').value;
+    // 1. Get Value from Hidden Input (created by populateAdminDropdown)
+    // The ID 'schedEditEmail' must match what we passed to populateAdminDropdown
+    const emailInput = document.getElementById('schedEditEmail');
+    const email = emailInput ? emailInput.value : "";
+    
     const start = document.getElementById('schedEditStart').value;
     const end = document.getElementById('schedEditEnd').value;
 
-    if(!email || !start || !end) return alert("Please fill all fields");
+    // Debugging
+    console.log("Loading Schedule For:", email, start, end);
 
-    google.script.run.withSuccessHandler(renderScheduleEditor).getAgentScheduleForEditor(email, start, end);
+    if(!email) return alert("Please select an agent from the list.");
+    if(!start || !end) return alert("Please select both Start and End dates.");
+
+    // UI Feedback
+    const tbody = document.getElementById('schedEditorBody');
+    tbody.innerHTML = '<tr><td colspan="4" style="text-align:center;">Loading schedule...</td></tr>';
+    document.getElementById('schedEditorContainer').style.display = 'block';
+
+    google.script.run
+        .withSuccessHandler(renderScheduleEditor)
+        .withFailureHandler(err => {
+            alert("Error: " + err.message);
+            tbody.innerHTML = '';
+        })
+        .getAgentScheduleForEditor(email, start, end);
 }
 
 function renderScheduleEditor(data) {
     const tbody = document.getElementById('schedEditorBody');
     tbody.innerHTML = "";
-    document.getElementById('schedEditorContainer').classList.remove('hidden');
+    
+    if (data.length === 0) {
+        tbody.innerHTML = '<tr><td colspan="4" style="text-align:center;">No schedule found for this date range.</td></tr>';
+        return;
+    }
 
     data.forEach(row => {
         const tr = document.createElement('tr');
@@ -8819,9 +8880,10 @@ function renderScheduleEditor(data) {
             <td>
                 <select class="sch-type">
                     <option value="Present" ${row.leaveType === 'Present' ? 'selected' : ''}>Present</option>
-                    <option value="OFF" ${row.leaveType === 'OFF' ? 'selected' : ''}>OFF</option>
+                    <option value="Day Off" ${row.leaveType === 'Day Off' ? 'selected' : ''}>Day Off</option>
                     <option value="Sick" ${row.leaveType === 'Sick' ? 'selected' : ''}>Sick</option>
                     <option value="Annual" ${row.leaveType === 'Annual' ? 'selected' : ''}>Annual</option>
+                    <option value="Absent" ${row.leaveType === 'Absent' ? 'selected' : ''}>Absent</option>
                 </select>
             </td>
         `;
@@ -8850,18 +8912,52 @@ function saveScheduleChanges() {
 
 
 function loadSwapData() {
-    // FIX: Retrieve email directly from the hidden profile field to ensure it is populated
-    const email = document.getElementById('prof-email').value; 
+    // 1. Identify User (Self or Proxy)
+    // We default to the logged-in user's email stored globally
+    const currentUserEmail = allUsersList.find(u => u.name === selfUserName)?.email;
     
-    if (!email) {
-       // If profile hasn't loaded yet, retry in 500ms
-       console.log("Waiting for profile email to load swap data...");
+    if (!currentUserEmail) {
+       console.log("Waiting for user data...");
        setTimeout(loadSwapData, 500);
        return;
     }
 
-    google.script.run.withSuccessHandler(renderSwapUI).getSwapData(email);
+    // 2. Load Market Data
+    google.script.run.withSuccessHandler(renderSwapUI).getSwapData(currentUserEmail);
+
+    // 3. Load My Shifts for the Dropdown (for Posting)
+    // Check if Manager Proxy is selected
+    const proxyVal = document.getElementById('swap-proxy-user') ? document.getElementById('swap-proxy-user').value : null;
+    const targetEmail = proxyVal || currentUserEmail;
+
+    google.script.run.withSuccessHandler(populateSwapShiftDropdown).webGetMySchedule(targetEmail);
 }
+function populateSwapShiftDropdown(schedule) {
+    const select = document.getElementById('swapSourceShift');
+    if (!select) return;
+    
+    select.innerHTML = '<option value="">-- Select a shift --</option>';
+    
+    if (!schedule || schedule.length === 0 || schedule.error) {
+        const opt = document.createElement('option');
+        opt.text = "No upcoming shifts found";
+        select.add(opt);
+        return;
+    }
+
+    schedule.forEach(s => {
+        // Only allow swapping "Present" shifts (ignore Days Off or Leave)
+        if (s.leaveType === 'Present') {
+            const opt = document.createElement('option');
+            // Value format: DATE|START|END
+            opt.value = `${s.date}|${s.startTime}|${s.endTime}`; 
+            opt.text = `${s.date} (${s.startTime} - ${s.endTime})`;
+            select.add(opt);
+        }
+    });
+}
+
+
 function renderSwapUI(data) {
     // 1. Market
     const marketBody = document.getElementById('swapMarketBody');
@@ -8925,18 +9021,35 @@ function renderSwapUI(data) {
 }
 
 function postSwapRequest() {
-    const date = document.getElementById('swapPostDate').value;
-    const shift = document.getElementById('swapPostShift').value;
-    // FIX: Get actual email
-    const email = document.getElementById('prof-email').value;
+    const shiftVal = document.getElementById('swapSourceShift').value;
+    if (!shiftVal) return alert("Please select a shift to swap.");
 
-    if(!date || !shift) return alert("Fill date and shift");
-    if(!email) return alert("User email not loaded. Please refresh.");
-    
+    const [date, start, end] = shiftVal.split('|');
+    const shiftString = `${start} - ${end}`;
+
+    // Determine Identity
+    let targetEmail = "";
+    // If manager dropdown exists and has value
+    const proxySelect = document.getElementById('swap-proxy-user');
+    if (proxySelect && proxySelect.value) {
+        targetEmail = proxySelect.value;
+    } else {
+        targetEmail = allUsersList.find(u => u.name === selfUserName)?.email;
+    }
+
+    if(!targetEmail) return alert("User not identified.");
+
+    // UI Feedback
+    const btn = document.querySelector('#swap-market .btn-primary');
+    btn.disabled = true;
+    btn.innerText = "Posting...";
+
     google.script.run.withSuccessHandler(() => {
-        alert("Posted!");
-        loadSwapData();
-    }).postSwapRequest(email, date, shift);
+        alert("Request posted to marketplace!");
+        btn.disabled = false;
+        btn.innerText = "Post to Market";
+        loadSwapData(); // Refresh list
+    }).postSwapRequest(targetEmail, date, shiftString);
 }
 
 function promptAcceptSwap(swapId) {
@@ -8961,12 +9074,15 @@ function processSwap(id, action, typeLabel) {
 }
 
 function switchSwapTab(tabName) {
-    document.querySelectorAll('.swap-view').forEach(el => el.style.display = 'none');
-    document.getElementById('swap-' + tabName).style.display = 'block';
+    // Hide all swap sub-views
+    ['market', 'mySwaps', 'approvals'].forEach(t => {
+        const el = document.getElementById('swap-' + t);
+        if(el) el.style.display = 'none';
+    });
     
-    // Toggle active button style
-    document.querySelectorAll('#shift-swaps-panel .btn-secondary').forEach(b => b.classList.remove('active'));
-    // (Optional: add logic to highlight active button)
+    // Show selected
+    const selected = document.getElementById('swap-' + tabName);
+    if(selected) selected.style.display = 'block';
     
     if(tabName === 'market' || tabName === 'mySwaps' || tabName === 'approvals') {
         loadSwapData();
